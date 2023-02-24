@@ -1,0 +1,50 @@
+plugins {
+    id 'java'
+    id 'com.google.protobuf' version '0.8.14'
+    id 'idea'
+}
+group 'com.nikhilm'
+version '1.0-SNAPSHOT'
+sourceCompatibility = 1.11
+def baseVersion = 'erpya-3.9.4-rc-1.0.4'
+def baseGroupId = 'io.github.adempiere'
+def privateDependencyBaseVersion = "adempiere-3.9.4"
+repositories {
+    mavenCentral()
+}
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.12.0"
+    }
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.34.1'
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+}
+sourceSets {
+    main {
+        java {
+            srcDirs 'build/generated/source/proto/main/grpc'
+            srcDirs 'build/generated/source/proto/main/java'
+            srcDirs 'src/main/proto'
+        }
+    }
+}
+dependencies {
+	implementation fileTree(
+        dir: 'dependencies',
+        include: [
+            '*.jar'
+        ]
+    )
+    implementation 'io.grpc:grpc-netty-shaded:1.34.1'
+    implementation 'io.grpc:grpc-protobuf:1.34.1'
+    implementation 'io.grpc:grpc-stub:1.34.1'
+    compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
+}

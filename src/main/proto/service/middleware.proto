@@ -1,0 +1,64 @@
+syntax = "proto3";
+package service;
+import "common/common.proto";
+option java_package = "org.spin.proto.service";
+option java_multiple_files = true;
+ 
+// Create Entity Request
+message CreateEntityRequest {
+	string table_name = 1;
+	repeated common.KeyValue attributes = 2;
+}
+
+// Update Entity Request
+message UpdateEntityRequest {
+	string table_name = 1;
+	int32 id = 2;
+	repeated common.KeyValue attributes = 3;
+}
+
+// Delete Entity Request
+message DeleteEntityRequest {
+	string table_name = 1;
+	int32 id = 2;
+}
+
+// Delete Entity Request
+message DeleteEntitiesRequest {
+	string table_name = 1;
+	repeated int32 ids = 2;
+}
+
+// BusinessProcess Request
+message RunBusinessProcessRequest {
+	string table_name = 1;
+  int32 id = 2;
+	string process_value = 3;
+	int32 table_selected_id = 4;
+	string report_type = 5;
+	repeated common.KeyValue parameters = 6;
+	repeated common.KeyValueSelection selections = 7;
+}
+
+//	Response with log and values from server
+message RunBusinessProcessResponse {
+	string id = 1;
+	bool is_error = 2;
+	string summary = 3;
+	string result_table_name = 4;
+	bool is_processing = 5;
+	string last_run = 6;
+	repeated common.ProcessLog logs = 7;
+}
+
+// The greeting service definition.
+service MiddlewareService {
+	// Create Entity Request
+	rpc CreateEntity(CreateEntityRequest) returns (common.Entity) {}
+	// Update Entity Request
+	rpc UpdateEntity(UpdateEntityRequest) returns (common.Entity) {}
+	// Delete Entity Request
+	rpc DeleteEntity(DeleteEntityRequest) returns (common.Empty) {}
+	//	Request a BusinessProcess / Report
+	rpc RunBusinessProcess(RunBusinessProcessRequest) returns (RunBusinessProcessResponse) {}
+}

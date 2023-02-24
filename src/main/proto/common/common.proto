@@ -1,0 +1,73 @@
+/************************************************************************************
+ * Copyright (C) 2012-2018 E.R.P. Consultores y Asociados, C.A.                     *
+ * Contributor(s): Yamel Senih ysenih@erpya.com                                     *
+ * This program is free software: you can redistribute it and/or modify             *
+ * it under the terms of the GNU General Public License as published by             *
+ * the Free Software Foundation, either version 2 of the License, or                *
+ * (at your option) any later version.                                              *
+ * This program is distributed in the hope that it will be useful,                  *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of                   *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                     *
+ * GNU General Public License for more details.                                     *
+ * You should have received a copy of the GNU General Public License                *
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.            *
+ ************************************************************************************/
+syntax = "proto3";
+package common;
+option java_package = "org.spin.proto.common";
+option java_multiple_files = true;
+
+//  Empty message
+message Empty {
+	
+}
+
+// Value Object from ADempiere
+message Entity {
+	int32 id = 1;
+	string table_name = 2;
+	map<string, Value> values = 3;
+}
+
+//	BusinessProcess Selections
+message KeyValueSelection {
+	int32 selection_id = 1;
+	repeated KeyValue values = 2;
+}
+
+// Key and Value pairs
+message KeyValue {
+	string key = 1;
+	Value value = 2;
+}
+
+// Define value for object
+message Value {
+	int32 int_value = 1;
+	int64 long_value = 2;
+	bool boolean_value = 3;
+	string string_value = 4;
+	Decimal decimal_value = 5;
+	ValueType value_type = 6;
+}
+
+// Define numeric types
+message Decimal {
+	string decimal_value = 1;
+	int32 scale = 2;
+}
+
+//	BusinessProcess Log result
+message ProcessLog {
+	int32 record_id = 1;
+	string log = 2;
+}
+
+enum ValueType {
+  UNKNOWN = 0;
+  INTEGER = 1;
+  DECIMAL = 2;
+  BOOLEAN = 3;
+  STRING = 4;
+  DATE = 5;
+}

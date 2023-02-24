@@ -12,30 +12,37 @@
  * You should have received a copy of the GNU General Public License                *
  * along with this program. If not, see <https://www.gnu.org/licenses/>.            *
  ************************************************************************************/
-package org.spin.grpc.service;
+package org.spin.authentication;
 
-import java.io.IOException;
+import java.util.concurrent.Executor;
 
-import org.spin.authentication.AuthorizationServerInterceptor;
-import org.spin.grpc.controller.MiddlewareServiceImplementation;
+import io.grpc.CallCredentials;
+import io.grpc.Metadata;
+import io.grpc.Status;
 
-import io.grpc.Server;
-import io.grpc.ServerBuilder;
+public class BearerToken extends CallCredentials {
 
-public class MiddlewareServer {
-	public static final int MOVIE_CONTROLLER_SERVICE_PORT = 50051;
-    public static void main(String[] args) 
-            throws IOException, InterruptedException {
-        Server server =     
-          ServerBuilder.forPort(MOVIE_CONTROLLER_SERVICE_PORT)
-                .addService(new MiddlewareServiceImplementation())
-                .intercept(new AuthorizationServerInterceptor())
-                .build();
-        server.start();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            server.shutdown();
-            System.out.println("Successfully stopped the server");
-        }));
-        server.awaitTermination();
+    private String value;
+
+    public BearerToken(String value) {
+        this.value = value;
+    }
+
+    @Override
+    public void applyRequestMetadata(RequestInfo requestInfo, Executor executor, MetadataApplier metadataApplier) {
+        executor.execute(() -> {
+            try {
+                Metadata headers = new Metadata();
+                headers.put(Constants.AUTHORIZATION_METADATA_KEY, String.format("%s %s", Constants.BEARER_TYPE, value));
+                metadataApplier.apply(headers);
+            } catch (Throwable e) {
+                metadataApplier.fail(Status.UNAUTHENTICATED.withCause(e));
+            }
+        });
+    }
+
+    @Override
+    public void thisUsesUnstableApi() {
+        // noop
     }
 }

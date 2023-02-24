@@ -12,30 +12,16 @@
  * You should have received a copy of the GNU General Public License                *
  * along with this program. If not, see <https://www.gnu.org/licenses/>.            *
  ************************************************************************************/
-package org.spin.grpc.service;
+package org.spin.authentication;
+import io.grpc.Context;
+import io.grpc.Metadata;
 
-import java.io.IOException;
+import static io.grpc.Metadata.ASCII_STRING_MARSHALLER;
 
-import org.spin.authentication.AuthorizationServerInterceptor;
-import org.spin.grpc.controller.MiddlewareServiceImplementation;
+public class Constants {
+	public static final String JWT_SIGNING_KEY = "L8hHXsaQOUjk5rg7XPGv4eL36anlCrkMz8CJ0i/8E/0=";
+    public static final String BEARER_TYPE = "Bearer";
 
-import io.grpc.Server;
-import io.grpc.ServerBuilder;
-
-public class MiddlewareServer {
-	public static final int MOVIE_CONTROLLER_SERVICE_PORT = 50051;
-    public static void main(String[] args) 
-            throws IOException, InterruptedException {
-        Server server =     
-          ServerBuilder.forPort(MOVIE_CONTROLLER_SERVICE_PORT)
-                .addService(new MiddlewareServiceImplementation())
-                .intercept(new AuthorizationServerInterceptor())
-                .build();
-        server.start();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            server.shutdown();
-            System.out.println("Successfully stopped the server");
-        }));
-        server.awaitTermination();
-    }
+    public static final Metadata.Key<String> AUTHORIZATION_METADATA_KEY = Metadata.Key.of("Authorization", ASCII_STRING_MARSHALLER);
+    public static final Context.Key<String> CLIENT_ID_CONTEXT_KEY = Context.key("clientId");
 }

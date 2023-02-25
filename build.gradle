@@ -63,6 +63,32 @@ sourceSets {
         }
     }
 }
+task AdempiereMiddlewareServer(type: CreateStartScripts) {
+	mainClass = javaMainClass
+    applicationName = 'adempiere-middleware-server'
+    outputDir = new File(project.buildDir, 'tmp')
+    classpath = jar.outputs.files + project.configurations.runtimeClasspath
+}
+
+applicationDistribution.into('bin') {
+	from(AdempiereMiddlewareServer)
+    fileMode = 0755
+}
+
+//	Create release for project
+task createRelease(type: Copy) {
+   dependsOn build
+   from file("$buildDir/distributions/")
+   into file("$buildDir/release/")
+   //destinationDir(file('build/release/'))
+   doLast {
+        file('build/release/')
+        	.listFiles({file -> file.isFile()} as FileFilter).sort()
+        	.each { File file ->
+            ant.checksum file: file
+        }
+   	}
+}
 dependencies {
 	implementation fileTree(
         dir: 'dependencies',

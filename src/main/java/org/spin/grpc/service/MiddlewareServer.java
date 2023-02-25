@@ -14,28 +14,100 @@
  ************************************************************************************/
 package org.spin.grpc.service;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import org.spin.authentication.AuthorizationServerInterceptor;
 import org.spin.grpc.controller.MiddlewareServiceImplementation;
+import org.spin.server.setup.SetupLoader;
 
 import io.grpc.Server;
+import io.grpc.netty.GrpcSslContexts;
+import io.grpc.netty.NettyServerBuilder;
+import io.netty.handler.ssl.ClientAuth;
+import io.netty.handler.ssl.SslContextBuilder;
 import io.grpc.ServerBuilder;
 
 public class MiddlewareServer {
+	private static final Logger logger = Logger.getLogger(MiddlewareServer.class.getName());
+	private Server server;
 	public static final int MOVIE_CONTROLLER_SERVICE_PORT = 50051;
-    public static void main(String[] args) 
-            throws IOException, InterruptedException {
-        Server server =     
-          ServerBuilder.forPort(MOVIE_CONTROLLER_SERVICE_PORT)
-                .addService(new MiddlewareServiceImplementation())
-                .intercept(new AuthorizationServerInterceptor())
-                .build();
-        server.start();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            server.shutdown();
-            System.out.println("Successfully stopped the server");
-        }));
-        server.awaitTermination();
-    }
+	
+	/**
+	 * Get SSL / TLS context
+	 * @return
+	 */
+	private SslContextBuilder getSslContextBuilder() {
+		SslContextBuilder sslClientContextBuilder = SslContextBuilder.forServer(new File(SetupLoader.getInstance().getServer().getCertificate_chain_file()),
+                new File(SetupLoader.getInstance().getServer().getPrivate_key_file()));
+        if (SetupLoader.getInstance().getServer().getTrust_certificate_collection_file() != null) {
+            sslClientContextBuilder.trustManager(new File(SetupLoader.getInstance().getServer().getTrust_certificate_collection_file()));
+            sslClientContextBuilder.clientAuth(ClientAuth.REQUIRE);
+        }
+        return GrpcSslContexts.configure(sslClientContextBuilder);
+	}
+	
+	private void start() throws IOException {
+		logger.info("Service Middleware added on " + SetupLoader.getInstance().getServer().getPort());
+		//	
+		if(SetupLoader.getInstance().getServer().isTlsEnabled()) {
+			server = NettyServerBuilder.forPort(SetupLoader.getInstance().getServer().getPort())
+				.sslContext(getSslContextBuilder().build())
+				.addService(new MiddlewareServiceImplementation())
+				.build()
+				.start();
+		} else {
+			server = ServerBuilder.forPort(SetupLoader.getInstance().getServer().getPort())
+				.intercept(new AuthorizationServerInterceptor())
+				.addService(new MiddlewareServiceImplementation())
+				.build()
+				.start();
+		}
+		logger.info("Server started, listening on " + SetupLoader.getInstance().getServer().getPort());
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				// Use stderr here since the logger may have been reset by its JVM shutdown hook.
+				logger.info("*** shutting down gRPC server since JVM is shutting down");
+				MiddlewareServer.this.stop();
+				logger.info("*** server shut down");
+			}
+		});
+	}
+	
+	private void stop() {
+	    if (server != null) {
+	    	server.shutdown();
+	    }
+	}
+	
+	/**
+	 * Await termination on the main thread since the grpc library uses daemon threads.
+	 */
+	private void blockUntilShutdown() throws InterruptedException {
+		if (server != null) {
+			server.awaitTermination();
+	    }
+	}
+	
+	public static void main(String[] args) throws Exception {
+		if (args == null) {
+			throw new Exception("Arguments Not Found");
+		}
+		//
+		if (args.length == 0) {
+			throw new Exception("Arguments Must Be: [property file name]");
+		}
+		  String setupFileName = args[0];
+		  if(setupFileName == null || setupFileName.trim().length() == 0) {
+			  throw new Exception("Setup File not found");
+		  }
+		  SetupLoader.loadSetup(setupFileName);
+		  //	Validate load
+		  SetupLoader.getInstance().validateLoad();
+		  final MiddlewareServer server = new MiddlewareServer();
+		  server.start();
+		  server.blockUntilShutdown();
+	  }
 }

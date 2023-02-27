@@ -238,7 +238,6 @@ jobs:
     needs:
       - build-app
     # Skip step based on secret
-    if: needs.check-do-secrets.outputs.is_have_secrets == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo

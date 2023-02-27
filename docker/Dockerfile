@@ -1,49 +1,37 @@
-FROM registry.digitalocean.com/erpya/adempiere-cloud:latest as libs
-FROM gradle:7.4.1 as bridge
+FROM gradle:8.0.1 as builder
 ARG BUILD_ARTIFACT 
 
-COPY --from=libs /opt/Adempiere/jboss/server/adempiere/deploy/adempiere.ear/  /opt/libDeploy/
+LABEL maintainer="ysenih@erpya.com" \
+	description="ADempiere gRPC Middleware used as ADempiere backend as little core"
 
-LABEL	maintainer="ysenih@erpya.com; EdwinBetanc0urt@outlook.com" \
-	description="ADempiere gRPC All In One Server used as ADempiere backend"
+WORKDIR /opt/apps/server
+
+COPY . . /opt/apps/server/
+
+EXPOSE ${SERVER_PORT}
+
+RUN gradle build && \
+	unzip -d /opt/apps build/distributions/adempiere-middleware.zip && \
+	mv docker/env.yaml /opt/apps/adempiere-middleware && \
+	mv docker/start.sh /opt/apps/adempiere-middleware && \
+	ls
+
+FROM eclipse-temurin:11-jdk-alpine
 
 # Init ENV with default values
 ENV \
 	SERVER_PORT="50059" \
-	SERVICES_ENABLED="access; business; core; dashboarding; dictionary; enrollment; log; ui; workflow; store; pos;" \
 	SERVER_LOG_LEVEL="WARNING" \
+	AD_TOKEN="" \
 	DB_HOST="localhost" \
 	DB_PORT="5432" \
 	DB_NAME="adempiere" \
 	DB_USER="adempiere" \
 	DB_PASSWORD="adempiere" \
 	DB_TYPE="PostgreSQL" \
-    BUILD_ARTIFACT=$BUILD_ARTIFACT
+	ADEMPIERE_APPS_TYPE=""
 
-
-
-EXPOSE ${SERVER_PORT}
-
-COPY $BUILD_ARTIFACT /opt/Apps/source
-
-RUN cd /opt/libDeploy && \
-        unzip -o adempiereRoot.war  && \
-        unzip adempiereHome/AdempiereClient.zip && \
-        mkdir /opt/Apps/source/dependences && \
-        mv Adempiere/lib/ext/*.jar /opt/Apps/source/dependences/ && \
-        mv Adempiere.jar /opt/Apps/source/dependences/ && \
-        mv AdempiereSLib.jar /opt/Apps/source/dependences/ && \
-        rm /opt/Apps/source/dependences/adempiere-gRPC-Server.jar && \
-        rm -R /opt/libDeploy && \
-        cd /opt/Apps/source && \
-        gradle build && \
-        unzip -d /opt/Apps /opt/Apps/source/build/distributions/adempiere-customer-backend.zip && \
-        mv /opt/Apps/adempiere-customer-backend /opt/Apps/ADempiere-gRPC-Server && \
-        cp /opt/Apps/source/build-docker/all_in_one_connection.yaml /opt/Apps/ADempiere-gRPC-Server/bin/ && \
-        cp /opt/Apps/source/build-docker/start.sh /opt/Apps/ADempiere-gRPC-Server/bin/ && \
-        cp /opt/Apps/source/build-docker/all_in_one_connection.yaml /opt/Apps/ADempiere-gRPC-Server/bin/
-
-FROM openjdk:8-jdk-alpine
+WORKDIR /opt/apps/server
 
 # timezone
 ENV TZ America/Caracas
@@ -61,10 +49,8 @@ RUN	rm -rf /var/cache/apk/* && \
                 apk add --no-cache \
 		tzdata
 
-COPY --from=bridge /opt/Apps/ADempiere-gRPC-Server /opt/Apps/ADempiere-gRPC-Server
 
-WORKDIR /opt/Apps/ADempiere-gRPC-Server/bin/
-
+COPY --from=builder /opt/apps/adempiere-middleware/ /opt/apps/server/
 
 # Start app
 CMD	'sh' 'start.sh'

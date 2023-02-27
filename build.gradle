@@ -6,7 +6,6 @@ plugins {
     id 'visual-studio'
 }
 group 'com.nikhilm'
-version '1.0-SNAPSHOT'
 sourceCompatibility = 1.11
 def grpcVersion = '1.53.0'
 def baseVersion = 'erpya-3.9.4-rc-1.0.4'

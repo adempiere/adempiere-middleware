@@ -10,3 +10,8 @@ I just want to improve ADempiere for many concorrent users.
 ```Shell
 gradle run --args="resources/env.yaml"
 ```
+
+
+## Some Notes
+
+For Token validation is used [JWT](https://www.viralpatel.net/java-create-validate-jwt-token/)

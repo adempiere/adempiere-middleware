@@ -14,6 +14,8 @@
  ************************************************************************************/
 package org.spin.authentication;
 
+import org.spin.server.setup.SetupLoader;
+
 import io.grpc.Context;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
@@ -28,9 +30,7 @@ import io.jsonwebtoken.Jwts;
 
 public class AuthorizationServerInterceptor implements ServerInterceptor {
 
-    private JwtParser parser = Jwts.parserBuilder().setSigningKey(Constants.JWT_SIGNING_KEY).build();
-
-    @Override
+	@Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall, Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
         String value = metadata.get(Constants.AUTHORIZATION_METADATA_KEY);
 
@@ -42,7 +42,10 @@ public class AuthorizationServerInterceptor implements ServerInterceptor {
         } else {
             try {
                 String token = value.substring(Constants.BEARER_TYPE.length()).trim();
+                //	Create ADempiere session, throw a error if it not exists
+                JwtParser parser = Jwts.parserBuilder().setSigningKey(SetupLoader.getInstance().getServer().getAdempiere_token()).build();
                 Jws<Claims> claims = parser.parseClaimsJws(token);
+                SessionManager.createSessionFromToken(SetupLoader.getInstance().getServer().getAdempiere_token());
                 Context ctx = Context.current().withValue(Constants.CLIENT_ID_CONTEXT_KEY, claims.getBody().getSubject());
                 return Contexts.interceptCall(ctx, serverCall, metadata, serverCallHandler);
             } catch (Exception e) {

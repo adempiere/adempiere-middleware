@@ -17,7 +17,6 @@ package org.spin.grpc.client;
 import java.security.Key;
 
 import org.spin.authentication.BearerToken;
-import org.spin.authentication.Constants;
 import org.spin.proto.common.Entity;
 import org.spin.proto.common.KeyValue;
 import org.spin.proto.common.Value;
@@ -25,6 +24,7 @@ import org.spin.proto.common.ValueType;
 import org.spin.proto.service.CreateEntityRequest;
 import org.spin.proto.service.MiddlewareServiceGrpc;
 import org.spin.proto.service.MiddlewareServiceGrpc.MiddlewareServiceBlockingStub;
+import org.spin.server.setup.SetupLoader;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -35,14 +35,27 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
 public class MiddlewareClient {
-	public static final int MOVIE_CONTROLLER_SERVICE_PORT = 50051;
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+    	if (args == null) {
+			throw new Exception("Arguments Not Found");
+		}
+		//
+		if (args.length == 0) {
+			throw new Exception("Arguments Must Be: [property file name]");
+		}
+		String setupFileName = args[0];
+		if(setupFileName == null || setupFileName.trim().length() == 0) {
+			throw new Exception("Setup File not found");
+		}
+		SetupLoader.loadSetup(setupFileName);
+		//	Validate load
+		SetupLoader.getInstance().validateLoad();
         ManagedChannel channel = ManagedChannelBuilder
-                .forAddress("localhost",  
-                   MOVIE_CONTROLLER_SERVICE_PORT)
+                .forAddress(SetupLoader.getInstance().getServer().getHost(),  
+                		SetupLoader.getInstance().getServer().getPort())
                 .usePlaintext()
                 .build();
-        byte[] keyBytes = Decoders.BASE64.decode(Constants.JWT_SIGNING_KEY);
+        byte[] keyBytes = Decoders.BASE64.decode("ba54a050aaf4a9cfc619a31afbb03d212b5024a9957fa8b069a8c1b742de8c878846244f9c4b6834");
         Key key = Keys.hmacShaKeyFor(keyBytes);
         BearerToken token = new BearerToken(Jwts.builder()
                 .setSubject("MiddlewareClient")

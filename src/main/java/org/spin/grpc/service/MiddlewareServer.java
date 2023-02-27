@@ -32,8 +32,6 @@ import io.grpc.ServerBuilder;
 public class MiddlewareServer {
 	private static final Logger logger = Logger.getLogger(MiddlewareServer.class.getName());
 	private Server server;
-	public static final int MOVIE_CONTROLLER_SERVICE_PORT = 50051;
-	
 	/**
 	 * Get SSL / TLS context
 	 * @return

@@ -50,3 +50,6 @@ jobs:
         with:
           gradle-version: 8.0.1
           arguments: build
+        env:
+          GITHUB_DEPLOY_USER: ${{ github.actor }}
+          GITHUB_DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}

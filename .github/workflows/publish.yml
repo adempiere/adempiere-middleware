@@ -213,30 +213,30 @@ jobs:
 
 
   # Check secrets to push image in docker hub registry
-  check-do-secrets:
-    name: Check if digital ocean registry information was set on secrets
-    needs:
-      - build-app
-    runs-on: ubuntu-latest
-    outputs:
-      is_have_secrets: ${{ steps.check_secret_job.outputs.is_have_secrets }}
-    steps:
-      - id: check_secret_job
-        run: |
-          if [[ "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" != "" ]] \
-          then
-            echo "Secrets to use a container registry are configured in the repo"
-            echo "is_have_secrets=true" >> $DIGITALOCEAN_ACCESS_TOKEN
-          else
-            echo "Secrets to use a container registry were not configured in the repo"
-            echo "is_have_secrets=false" >> $DIGITALOCEAN_ACCESS_TOKEN
-          fi
+  # check-do-secrets:
+  #   name: Check if digital ocean registry information was set on secrets
+  #   needs:
+  #     - build-app
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     is_have_secrets: ${{ steps.check_secret_job.outputs.is_have_secrets }}
+  #   steps:
+  #     - id: check_secret_job
+  #       run: |
+  #         if [[ "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" != "" ]] \
+  #         then
+  #           echo "Secrets to use a container registry are configured in the repo"
+  #           echo "is_have_secrets=true" >> $DIGITALOCEAN_ACCESS_TOKEN
+  #         else
+  #           echo "Secrets to use a container registry were not configured in the repo"
+  #           echo "is_have_secrets=false" >> $DIGITALOCEAN_ACCESS_TOKEN
+  #         fi
 
 
   push-imame-do:
     name: Push Docker image to Digital Ocean
     needs:
-      - check-do-secrets
+      - build-app
     # Skip step based on secret
     if: needs.check-do-secrets.outputs.is_have_secrets == 'true'
     runs-on: ubuntu-latest

@@ -32,6 +32,9 @@ jobs:
         with:
           gradle-version: 8.0.1
           arguments: createRelease
+        env:
+          GITHUB_DEPLOY_USER: ${{ github.actor }}
+          GITHUB_DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
 
       - name: Upload dist app zip artifact
         uses: actions/upload-artifact@v3
@@ -207,3 +210,62 @@ jobs:
             ${{ secrets.DOCKER_REPO_BACKEND }}:${{ github.event.release.tag_name }}
           build-args: |
             JDK_RELEASE=11-jdk
+
+
+  # Check secrets to push image in docker hub registry
+  check-do-secrets:
+    name: Check if digital ocean registry information was set on secrets
+    needs:
+      - build-app
+    runs-on: ubuntu-latest
+    outputs:
+      is_have_secrets: ${{ steps.check_secret_job.outputs.is_have_secrets }}
+    steps:
+      - id: check_secret_job
+        run: |
+          if [[ "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" != ""]]; \
+          then
+            echo "Secrets to use a container registry are configured in the repo"
+            echo "is_have_secrets=true" >> $DIGITALOCEAN_ACCESS_TOKEN
+          else
+            echo "Secrets to use a container registry were not configured in the repo"
+            echo "is_have_secrets=false" >> $DIGITALOCEAN_ACCESS_TOKEN
+          fi
+
+
+  push-imame-do:
+    name: Push Docker image to Digital Ocean
+    needs:
+      - check-do-secrets
+    # Skip step based on secret
+    if: needs.check-do-secrets.outputs.is_have_secrets == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Download build dist app
+        uses: actions/download-artifact@v3
+        with:
+          name: backend.zip
+          path: dist
+
+      - name: Unzip dist file
+        run: |
+          cd dist
+          unzip -o backend.zip
+
+      - uses: actions/checkout@v3
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - name: Log in to DO Container Registry
+        run: doctl registry login --expiry-seconds 600
+      - name: Build image
+        run: docker build -t adempiere-middleware -f docker/Dockerfile .
+      - name: Tag image
+        run: docker tag adempiere-middleware registry.digitalocean.com/erpya/adempiere-middleware:${{ github.event.release.tag_name }}
+      - name: Push image to DO Container Registry
+        run: docker push registry.digitalocean.com/erpya/adempiere-middleware:${{ github.event.release.tag_name }}
+            

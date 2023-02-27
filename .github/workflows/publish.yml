@@ -223,7 +223,7 @@ jobs:
     steps:
       - id: check_secret_job
         run: |
-          if [[ "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" != ""]]; \
+          if [[ "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" != ""]]
           then
             echo "Secrets to use a container registry are configured in the repo"
             echo "is_have_secrets=true" >> $DIGITALOCEAN_ACCESS_TOKEN

@@ -14,6 +14,8 @@
  ************************************************************************************/
 package org.spin.grpc.controller;
 
+import org.compiere.util.CLogger;
+import org.spin.grpc.service.Service;
 import org.spin.proto.common.Empty;
 import org.spin.proto.common.Entity;
 import org.spin.proto.service.CreateEntityRequest;
@@ -27,13 +29,16 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
 public class MiddlewareServiceImplementation extends MiddlewareServiceImplBase {
-    @Override
+	
+	/**	Logger			*/
+	private CLogger log = CLogger.getCLogger(MiddlewareServiceImplementation.class);
+	
+	@Override
     public void createEntity(CreateEntityRequest request, StreamObserver<Entity> responseObserver) {
     	try {
-    		System.out.println("createEntity: " + request);
-    		Entity.Builder entity = Entity.newBuilder();
-			responseObserver.onNext(entity.build());
-			responseObserver.onCompleted();
+    		log.fine("createEntity: " + request);
+    		responseObserver.onNext(Service.createEntity(request).build());
+    		responseObserver.onCompleted();
 		} catch (Exception e) {
 			responseObserver.onError(Status.INTERNAL
 				.withDescription(e.getLocalizedMessage())
@@ -45,9 +50,8 @@ public class MiddlewareServiceImplementation extends MiddlewareServiceImplBase {
     @Override
     public void updateEntity(UpdateEntityRequest request, StreamObserver<Entity> responseObserver) {
     	try {
-    		System.out.println("updateEntity: " + request);
-    		Entity.Builder entity = Entity.newBuilder();
-			responseObserver.onNext(entity.build());
+    		log.fine("updateEntity: " + request);
+    		responseObserver.onNext(Service.updateEntity(request).build());
 			responseObserver.onCompleted();
 		} catch (Exception e) {
 			responseObserver.onError(Status.INTERNAL
@@ -60,9 +64,8 @@ public class MiddlewareServiceImplementation extends MiddlewareServiceImplBase {
     @Override
     public void deleteEntity(DeleteEntityRequest request, StreamObserver<Empty> responseObserver) {
     	try {
-    		System.out.println("deleteEntity: " + request);
-    		Empty.Builder empty = Empty.newBuilder();
-			responseObserver.onNext(empty.build());
+    		log.fine("deleteEntity: " + request);
+    		responseObserver.onNext(Service.deleteEntity(request).build());
 			responseObserver.onCompleted();
 		} catch (Exception e) {
 			responseObserver.onError(Status.INTERNAL
@@ -75,9 +78,8 @@ public class MiddlewareServiceImplementation extends MiddlewareServiceImplBase {
     @Override
     public void runBusinessProcess(RunBusinessProcessRequest request, StreamObserver<RunBusinessProcessResponse> responseObserver) {
     	try {
-    		System.out.println("runBusinessProcess: " + request);
-    		RunBusinessProcessResponse.Builder processLogs = RunBusinessProcessResponse.newBuilder();
-			responseObserver.onNext(processLogs.build());
+    		log.fine("runBusinessProcess: " + request);
+    		responseObserver.onNext(Service.runProcess(request).build());
 			responseObserver.onCompleted();
 		} catch (Exception e) {
 			responseObserver.onError(Status.INTERNAL

@@ -14,7 +14,7 @@ def privateDependencyBaseVersion = "adempiere-3.9.4"
 startScripts.enabled = false
 
 ext {
-	javaMainClass = "org.spin.grpc.service.MiddlewareServer"
+	javaMainClass = "org.spin.grpc.server.MiddlewareServer"
 }
 
 application {

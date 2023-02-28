@@ -15,15 +15,24 @@
 package org.spin.grpc.client;
 
 import java.security.Key;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.IntStream;
 
+import org.compiere.util.CLogger;
 import org.spin.authentication.BearerToken;
 import org.spin.proto.common.Entity;
 import org.spin.proto.common.KeyValue;
 import org.spin.proto.common.Value;
 import org.spin.proto.common.ValueType;
 import org.spin.proto.service.CreateEntityRequest;
+import org.spin.proto.service.DeleteEntityRequest;
 import org.spin.proto.service.MiddlewareServiceGrpc;
 import org.spin.proto.service.MiddlewareServiceGrpc.MiddlewareServiceBlockingStub;
+import org.spin.proto.service.UpdateEntityRequest;
 import org.spin.server.setup.SetupLoader;
 
 import io.grpc.ManagedChannel;
@@ -35,6 +44,10 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
 public class MiddlewareClient {
+	
+	/**	Logger			*/
+	private static CLogger log = CLogger.getCLogger(MiddlewareClient.class);
+	
     public static void main(String[] args) throws Exception {
     	if (args == null) {
 			throw new Exception("Arguments Not Found");
@@ -55,7 +68,7 @@ public class MiddlewareClient {
                 		SetupLoader.getInstance().getServer().getPort())
                 .usePlaintext()
                 .build();
-        byte[] keyBytes = Decoders.BASE64.decode("ba54a050aaf4a9cfc619a31afbb03d212b5024a9957fa8b069a8c1b742de8c878846244f9c4b6834");
+        byte[] keyBytes = Decoders.BASE64.decode(SetupLoader.getInstance().getServer().getAdempiere_token());
         Key key = Keys.hmacShaKeyFor(keyBytes);
         BearerToken token = new BearerToken(Jwts.builder()
                 .setSubject("MiddlewareClient")
@@ -66,34 +79,99 @@ public class MiddlewareClient {
                  .newBlockingStub(channel)
                  .withCallCredentials(token);
         try {
-        	Entity entity = client.createEntity(CreateEntityRequest.newBuilder()
-        			.setTableName("M_Product_Class")
-        			//	Value
-        			.addAttributes(KeyValue.newBuilder()
-        					.setKey("Value")
-        					.setValue(Value.newBuilder()
-        							.setStringValue("gRPC-01")
-        							.setValueType(ValueType.STRING)
-        							.build())
-        					.build())
-        			//	Name
-        			.addAttributes(KeyValue.newBuilder()
-        					.setKey("Name")
-        					.setValue(Value.newBuilder()
-        							.setStringValue("Test for gRPC-01")
-        							.setValueType(ValueType.STRING)
-        							.build())
-        					.build())
-        			//	Description
-        			.addAttributes(KeyValue.newBuilder()
-        					.setKey("Description")
-        					.setValue(Value.newBuilder()
-        							.setStringValue("This is a test based on gRPC-01")
-        							.setValueType(ValueType.STRING)
-        							.build())
-        					.build())
-        			.build());
-            System.out.println("Entity Created " + entity.getId() + " - " + entity.getValuesMap());
+        	SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+        	long start = System.currentTimeMillis();
+        	List<Integer> ids = new ArrayList<>();
+        	log.warning("Started at: " + format.format(new Date(start)));
+        	IntStream.range(0, 1500).forEach(index -> {
+        		String uuid = UUID.randomUUID().toString();
+        		Entity entity = client.createEntity(CreateEntityRequest.newBuilder()
+            			.setTableName("M_Product_Class")
+            			//	Value
+            			.addAttributes(KeyValue.newBuilder()
+            					.setKey("Value")
+            					.setValue(Value.newBuilder()
+            							.setStringValue(uuid)
+            							.setValueType(ValueType.STRING)
+            							.build())
+            					.build())
+            			//	Name
+            			.addAttributes(KeyValue.newBuilder()
+            					.setKey("Name")
+            					.setValue(Value.newBuilder()
+            							.setStringValue("Test for gRPC " + index)
+            							.setValueType(ValueType.STRING)
+            							.build())
+            					.build())
+            			//	Description
+            			.addAttributes(KeyValue.newBuilder()
+            					.setKey("Description")
+            					.setValue(Value.newBuilder()
+            							.setStringValue("This is a test based on gRPC " + index)
+            							.setValueType(ValueType.STRING)
+            							.build())
+            					.build())
+            			.addAttributes(KeyValue.newBuilder()
+            					.setKey("IsDefault")
+            					.setValue(Value.newBuilder()
+            							.setBooleanValue(false)
+            							.setValueType(ValueType.BOOLEAN)
+            							.build())
+            					.build())
+            			.build());
+        		ids.add(entity.getId());
+                System.out.println("Entity Created " + entity.getId());
+        	});
+        	ids.forEach(id -> {
+        		Entity entity = client.updateEntity(UpdateEntityRequest.newBuilder()
+            			.setTableName("M_Product_Class")
+            			.setId(id)
+            			//	Value
+            			.addAttributes(KeyValue.newBuilder()
+            					.setKey("Value")
+            					.setValue(Value.newBuilder()
+            							.setStringValue("" + id)
+            							.setValueType(ValueType.STRING)
+            							.build())
+            					.build())
+            			//	Name
+            			.addAttributes(KeyValue.newBuilder()
+            					.setKey("Name")
+            					.setValue(Value.newBuilder()
+            							.setStringValue("Test for gRPC " + id)
+            							.setValueType(ValueType.STRING)
+            							.build())
+            					.build())
+            			//	Description
+            			.addAttributes(KeyValue.newBuilder()
+            					.setKey("Description")
+            					.setValue(Value.newBuilder()
+            							.setStringValue("This is a test based on gRPC " + id)
+            							.setValueType(ValueType.STRING)
+            							.build())
+            					.build())
+            			.addAttributes(KeyValue.newBuilder()
+            					.setKey("IsDefault")
+            					.setValue(Value.newBuilder()
+            							.setBooleanValue(false)
+            							.setValueType(ValueType.BOOLEAN)
+            							.build())
+            					.build())
+            			.build());
+        		ids.add(entity.getId());
+                System.out.println("Update Created " + entity.getId());
+        	});
+        	ids.forEach(id -> {
+        		client.deleteEntity(DeleteEntityRequest.newBuilder()
+            			.setTableName("M_Product_Class")
+            			.setId(id)
+            			.build());
+        		System.out.println("Entity Deleted " + id);
+        	});
+        	long end = System.currentTimeMillis();
+        	log.warning("Started at: " + format.format(new Date(start)));
+        	log.warning("Finish at: " + format.format(new Date(end)));
+            System.out.println("Entities Created");
         } catch (StatusRuntimeException e) {
             e.printStackTrace();
         }

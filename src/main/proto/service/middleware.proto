@@ -31,18 +31,17 @@ message DeleteEntitiesRequest {
 
 // BusinessProcess Request
 message RunBusinessProcessRequest {
-	string table_name = 1;
-  int32 id = 2;
-	string process_value = 3;
+	string process_code = 1;
+	string table_name = 2;
+	int32 id = 3;
 	int32 table_selected_id = 4;
-	string report_type = 5;
-	repeated common.KeyValue parameters = 6;
-	repeated common.KeyValueSelection selections = 7;
+	repeated common.KeyValue parameters = 5;
+	repeated common.KeyValueSelection selections = 6;
 }
 
 //	Response with log and values from server
 message RunBusinessProcessResponse {
-	string id = 1;
+	int32 id = 1;
 	bool is_error = 2;
 	string summary = 3;
 	string result_table_name = 4;

@@ -15,8 +15,7 @@ EXPOSE ${SERVER_PORT}
 RUN gradle build && \
 	unzip -d /opt/apps build/distributions/adempiere-middleware.zip && \
 	mv docker/env.yaml /opt/apps/adempiere-middleware && \
-	mv docker/start.sh /opt/apps/adempiere-middleware && \
-	ls
+	mv docker/start.sh /opt/apps/adempiere-middleware
 
 FROM eclipse-temurin:11-jdk-alpine
 

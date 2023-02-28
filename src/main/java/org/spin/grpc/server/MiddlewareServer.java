@@ -49,19 +49,16 @@ public class MiddlewareServer {
 	private void start() throws IOException {
 		logger.info("Service Middleware added on " + SetupLoader.getInstance().getServer().getPort());
 		//	
+		ServerBuilder<?> serverBuilder;
 		if(SetupLoader.getInstance().getServer().isTlsEnabled()) {
-			server = NettyServerBuilder.forPort(SetupLoader.getInstance().getServer().getPort())
-				.sslContext(getSslContextBuilder().build())
-				.addService(new MiddlewareServiceImplementation())
-				.build()
-				.start();
+			serverBuilder = NettyServerBuilder.forPort(SetupLoader.getInstance().getServer().getPort())
+				.sslContext(getSslContextBuilder().build());
 		} else {
-			server = ServerBuilder.forPort(SetupLoader.getInstance().getServer().getPort())
-				.intercept(new AuthorizationServerInterceptor())
-				.addService(new MiddlewareServiceImplementation())
-				.build()
-				.start();
+			serverBuilder = ServerBuilder.forPort(SetupLoader.getInstance().getServer().getPort())
+				.intercept(new AuthorizationServerInterceptor());
 		}
+		serverBuilder.addService(new MiddlewareServiceImplementation());
+		server = serverBuilder.build().start();
 		logger.info("Server started, listening on " + SetupLoader.getInstance().getServer().getPort());
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override

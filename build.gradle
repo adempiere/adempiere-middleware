@@ -95,7 +95,6 @@ dependencies {
             '*.jar'
         ]
     )
-    //implementation "com.google.api.grpc:proto-google-common-protos:1.0.0"
     implementation "io.grpc:grpc-alts:${grpcVersion}"
     implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
     implementation "io.grpc:grpc-protobuf:${grpcVersion}"

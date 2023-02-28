@@ -112,7 +112,7 @@ jobs:
     steps:
       - id: check_secret_job
         run: |
-          if [[ "${{ secrets.DOCKER_REPO_adempiere-middleware }}" != "" && \
+          if [[ "${{ secrets.DOCKER_REPO_ADEMPIERE_MIDDLEWARE }}" != "" && \
                 "${{ secrets.DOCKER_USERNAME }}" != "" && \
                 "${{ secrets.DOCKER_TOKEN }}" != "" ]]; \
           then
@@ -162,8 +162,8 @@ jobs:
           file: build-docker/production-alpine.Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_REPO_adempiere-middleware }}:alpine-${{ github.event.release.tag_name }}
-            ${{ secrets.DOCKER_REPO_adempiere-middleware }}:alpine
+            ${{ secrets.DOCKER_REPO_ADEMPIERE_MIDDLEWARE }}:alpine-${{ github.event.release.tag_name }}
+            ${{ secrets.DOCKER_REPO_ADEMPIERE_MIDDLEWARE }}:alpine
           build-args: |
             JDK_RELEASE=11-jdk-alpine
 
@@ -206,38 +206,38 @@ jobs:
           file: ./build-docker/production.Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKER_REPO_adempiere-middleware }}:latest
-            ${{ secrets.DOCKER_REPO_adempiere-middleware }}:${{ github.event.release.tag_name }}
+            ${{ secrets.DOCKER_REPO_ADEMPIERE_MIDDLEWARE }}:latest
+            ${{ secrets.DOCKER_REPO_ADEMPIERE_MIDDLEWARE }}:${{ github.event.release.tag_name }}
           build-args: |
             JDK_RELEASE=11-jdk
 
-
   # Check secrets to push image in docker hub registry
-  # check-do-secrets:
-  #   name: Check if digital ocean registry information was set on secrets
-  #   needs:
-  #     - build-app
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     is_have_secrets: ${{ steps.check_secret_job.outputs.is_have_secrets }}
-  #   steps:
-  #     - id: check_secret_job
-  #       run: |
-  #         if [[ "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" != "" ]] \
-  #         then
-  #           echo "Secrets to use a container registry are configured in the repo"
-  #           echo "is_have_secrets=true" >> $DIGITALOCEAN_ACCESS_TOKEN
-  #         else
-  #           echo "Secrets to use a container registry were not configured in the repo"
-  #           echo "is_have_secrets=false" >> $DIGITALOCEAN_ACCESS_TOKEN
-  #         fi
-
+  check-digital-ocean-secrets:
+    name: Check if digital ocean registry information was set on secrets
+    needs:
+      - build-app
+    runs-on: ubuntu-latest
+    outputs:
+      is_have_secrets: ${{ steps.check_secret_job.outputs.is_have_secrets }}
+    steps:
+      - id: check_secret_job
+        run: |
+          if [[ "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" != "" && \
+                "${{ secrets.DIGITALOCEAN_ORGANIZATION }}" != "" ]]; \
+          then
+            echo "Secrets to use a container registry are configured in the repo"
+            echo "is_have_secrets=true" >> $GITHUB_OUTPUT
+          else
+            echo "Secrets to use a container registry were not configured in the repo"
+            echo "is_have_secrets=false" >> $GITHUB_OUTPUT
+          fi
 
   push-imame-do:
     name: Push Docker image to Digital Ocean
     needs:
-      - build-app
+      - check-digital-ocean-secrets
     # Skip step based on secret
+    if: needs.check-digital-ocean-secrets.outputs.is_have_secrets == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -264,7 +264,7 @@ jobs:
       - name: Build image
         run: docker build -t adempiere-middleware --build-arg GITHUB_DEPLOY_USER="${{ github.actor }}" --build-arg GITHUB_DEPLOY_TOKEN="${{ secrets.DEPLOY_TOKEN }}" -f docker/Dockerfile .
       - name: Tag image
-        run: docker tag adempiere-middleware registry.digitalocean.com/erpya/adempiere-middleware:${{ github.event.release.tag_name }}
+        run: docker tag adempiere-middleware registry.digitalocean.com/${{ secrets.DIGITALOCEAN_ORGANIZATION }}/adempiere-middleware:${{ github.event.release.tag_name }}
       - name: Push image to DO Container Registry
-        run: docker push registry.digitalocean.com/erpya/adempiere-middleware:${{ github.event.release.tag_name }}
+        run: docker push registry.digitalocean.com/${{ secrets.DIGITALOCEAN_ORGANIZATION }}/adempiere-middleware:${{ github.event.release.tag_name }}
             

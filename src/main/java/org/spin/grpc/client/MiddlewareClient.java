@@ -32,7 +32,6 @@ import org.spin.proto.service.CreateEntityRequest;
 import org.spin.proto.service.DeleteEntityRequest;
 import org.spin.proto.service.MiddlewareServiceGrpc;
 import org.spin.proto.service.MiddlewareServiceGrpc.MiddlewareServiceBlockingStub;
-import org.spin.proto.service.UpdateEntityRequest;
 import org.spin.server.setup.SetupLoader;
 
 import io.grpc.ManagedChannel;
@@ -83,7 +82,7 @@ public class MiddlewareClient {
         	long start = System.currentTimeMillis();
         	List<Integer> ids = new ArrayList<>();
         	log.warning("Started at: " + format.format(new Date(start)));
-        	IntStream.range(0, 1500).forEach(index -> {
+        	IntStream.range(0, 100).forEach(index -> {
         		String uuid = UUID.randomUUID().toString();
         		Entity entity = client.createEntity(CreateEntityRequest.newBuilder()
             			.setTableName("M_Product_Class")
@@ -121,45 +120,6 @@ public class MiddlewareClient {
             			.build());
         		ids.add(entity.getId());
                 System.out.println("Entity Created " + entity.getId());
-        	});
-        	ids.forEach(id -> {
-        		Entity entity = client.updateEntity(UpdateEntityRequest.newBuilder()
-            			.setTableName("M_Product_Class")
-            			.setId(id)
-            			//	Value
-            			.addAttributes(KeyValue.newBuilder()
-            					.setKey("Value")
-            					.setValue(Value.newBuilder()
-            							.setStringValue("" + id)
-            							.setValueType(ValueType.STRING)
-            							.build())
-            					.build())
-            			//	Name
-            			.addAttributes(KeyValue.newBuilder()
-            					.setKey("Name")
-            					.setValue(Value.newBuilder()
-            							.setStringValue("Test for gRPC " + id)
-            							.setValueType(ValueType.STRING)
-            							.build())
-            					.build())
-            			//	Description
-            			.addAttributes(KeyValue.newBuilder()
-            					.setKey("Description")
-            					.setValue(Value.newBuilder()
-            							.setStringValue("This is a test based on gRPC " + id)
-            							.setValueType(ValueType.STRING)
-            							.build())
-            					.build())
-            			.addAttributes(KeyValue.newBuilder()
-            					.setKey("IsDefault")
-            					.setValue(Value.newBuilder()
-            							.setBooleanValue(false)
-            							.setValueType(ValueType.BOOLEAN)
-            							.build())
-            					.build())
-            			.build());
-        		ids.add(entity.getId());
-                System.out.println("Update Created " + entity.getId());
         	});
         	ids.forEach(id -> {
         		client.deleteEntity(DeleteEntityRequest.newBuilder()

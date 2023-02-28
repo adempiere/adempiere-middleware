@@ -95,8 +95,9 @@ dependencies {
             '*.jar'
         ]
     )
-    implementation "io.grpc:grpc-alts:${grpcVersion}"
     implementation "io.grpc:grpc-netty-shaded:${grpcVersion}"
+    implementation "io.grpc:grpc-alts:${grpcVersion}"
+    implementation "io.netty:netty-handler:4.1.89.Final"
     implementation "io.grpc:grpc-protobuf:${grpcVersion}"
     implementation "io.grpc:grpc-stub:${grpcVersion}"
     implementation 'io.jsonwebtoken:jjwt-api:0.11.2'

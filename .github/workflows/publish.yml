@@ -262,7 +262,7 @@ jobs:
       - name: Log in to DO Container Registry
         run: doctl registry login --expiry-seconds 600
       - name: Build image
-        run: docker build -t adempiere-middleware -f docker/Dockerfile .
+        run: docker build -t adempiere-middleware --build-arg GITHUB_DEPLOY_USER="${{ github.actor }}" --build-arg GITHUB_DEPLOY_TOKEN="${{ secrets.DEPLOY_TOKEN }}" -f docker/Dockerfile .
       - name: Tag image
         run: docker tag adempiere-middleware registry.digitalocean.com/erpya/adempiere-middleware:${{ github.event.release.tag_name }}
       - name: Push image to DO Container Registry

@@ -1,5 +1,7 @@
 FROM gradle:8.0.1 as builder
-ARG BUILD_ARTIFACT 
+ARG BUILD_ARTIFACT \
+	GITHUB_DEPLOY_USER \
+	GITHUB_DEPLOY_TOKEN
 
 LABEL maintainer="ysenih@erpya.com" \
 	description="ADempiere gRPC Middleware used as ADempiere backend as little core"

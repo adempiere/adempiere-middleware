@@ -16,8 +16,8 @@ package org.spin.grpc.controller;
 
 import org.compiere.util.CLogger;
 import org.spin.grpc.service.Service;
-import org.spin.proto.common.Empty;
-import org.spin.proto.common.Entity;
+import org.spin.proto.service.Empty;
+import org.spin.proto.service.Entity;
 import org.spin.proto.service.CreateEntityRequest;
 import org.spin.proto.service.DeleteEntityRequest;
 import org.spin.proto.service.MiddlewareServiceGrpc.MiddlewareServiceImplBase;

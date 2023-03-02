@@ -19,9 +19,9 @@ import org.compiere.model.PO;
 import org.compiere.model.POInfo;
 import org.compiere.util.Env;
 import org.compiere.util.Msg;
-import org.spin.proto.common.Entity;
-import org.spin.proto.common.ProcessLog;
-import org.spin.proto.common.Value;
+import org.spin.proto.service.Entity;
+import org.spin.proto.service.ProcessLog;
+import org.spin.proto.service.Value;
 
 /**
  * Class for convert any document

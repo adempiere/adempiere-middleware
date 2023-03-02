@@ -1,20 +1,74 @@
 syntax = "proto3";
 package service;
-import "common/common.proto";
 option java_package = "org.spin.proto.service";
 option java_multiple_files = true;
+
+ //  Empty message
+ message Empty {
+     
+ }
  
+ // Value Object from ADempiere
+ message Entity {
+     int32 id = 1;
+     string table_name = 2;
+     map<string, Value> values = 3;
+ }
+ 
+ //	BusinessProcess Selections
+ message KeyValueSelection {
+     int32 selection_id = 1;
+     repeated KeyValue values = 2;
+ }
+ 
+ // Key and Value pairs
+ message KeyValue {
+     string key = 1;
+     Value value = 2;
+ }
+ 
+ // Define value for object
+ message Value {
+     int32 int_value = 1;
+     int64 long_value = 2;
+     bool boolean_value = 3;
+     string string_value = 4;
+     Decimal decimal_value = 5;
+     ValueType value_type = 6;
+ }
+ 
+ // Define numeric types
+ message Decimal {
+     string decimal_value = 1;
+     int32 scale = 2;
+ }
+ 
+ //	BusinessProcess Log result
+ message ProcessLog {
+     int32 record_id = 1;
+     string log = 2;
+ }
+ 
+ enum ValueType {
+   UNKNOWN = 0;
+   INTEGER = 1;
+   DECIMAL = 2;
+   BOOLEAN = 3;
+   STRING = 4;
+   DATE = 5;
+ }
+
 // Create Entity Request
 message CreateEntityRequest {
 	string table_name = 1;
-	repeated common.KeyValue attributes = 2;
+	repeated KeyValue attributes = 2;
 }
 
 // Update Entity Request
 message UpdateEntityRequest {
 	string table_name = 1;
 	int32 id = 2;
-	repeated common.KeyValue attributes = 3;
+	repeated KeyValue attributes = 3;
 }
 
 // Delete Entity Request
@@ -35,8 +89,8 @@ message RunBusinessProcessRequest {
 	string table_name = 2;
 	int32 id = 3;
 	int32 table_selected_id = 4;
-	repeated common.KeyValue parameters = 5;
-	repeated common.KeyValueSelection selections = 6;
+	repeated KeyValue parameters = 5;
+	repeated KeyValueSelection selections = 6;
 }
 
 //	Response with log and values from server
@@ -47,17 +101,17 @@ message RunBusinessProcessResponse {
 	string result_table_name = 4;
 	bool is_processing = 5;
 	string last_run = 6;
-	repeated common.ProcessLog logs = 7;
+	repeated ProcessLog logs = 7;
 }
 
 // The greeting service definition.
 service MiddlewareService {
 	// Create Entity Request
-	rpc CreateEntity(CreateEntityRequest) returns (common.Entity) {}
+	rpc CreateEntity(CreateEntityRequest) returns (Entity) {}
 	// Update Entity Request
-	rpc UpdateEntity(UpdateEntityRequest) returns (common.Entity) {}
+	rpc UpdateEntity(UpdateEntityRequest) returns (Entity) {}
 	// Delete Entity Request
-	rpc DeleteEntity(DeleteEntityRequest) returns (common.Empty) {}
+	rpc DeleteEntity(DeleteEntityRequest) returns (Empty) {}
 	//	Request a BusinessProcess / Report
 	rpc RunBusinessProcess(RunBusinessProcessRequest) returns (RunBusinessProcessResponse) {}
 }

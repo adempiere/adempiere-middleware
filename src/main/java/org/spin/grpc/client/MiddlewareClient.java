@@ -24,10 +24,10 @@ import java.util.stream.IntStream;
 
 import org.compiere.util.CLogger;
 import org.spin.authentication.BearerToken;
-import org.spin.proto.common.Entity;
-import org.spin.proto.common.KeyValue;
-import org.spin.proto.common.Value;
-import org.spin.proto.common.ValueType;
+import org.spin.proto.service.Entity;
+import org.spin.proto.service.KeyValue;
+import org.spin.proto.service.Value;
+import org.spin.proto.service.ValueType;
 import org.spin.proto.service.CreateEntityRequest;
 import org.spin.proto.service.DeleteEntityRequest;
 import org.spin.proto.service.MiddlewareServiceGrpc;

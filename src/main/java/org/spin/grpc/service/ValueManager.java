@@ -40,10 +40,10 @@ import org.compiere.util.Msg;
 import org.compiere.util.NamePair;
 import org.compiere.util.TimeUtil;
 import org.compiere.util.Util;
-import org.spin.proto.common.Decimal;
-import org.spin.proto.common.KeyValue;
-import org.spin.proto.common.Value;
-import org.spin.proto.common.ValueType;
+import org.spin.proto.service.Decimal;
+import org.spin.proto.service.KeyValue;
+import org.spin.proto.service.Value;
+import org.spin.proto.service.ValueType;
 
 /**
  * Class for handle Values from and to client

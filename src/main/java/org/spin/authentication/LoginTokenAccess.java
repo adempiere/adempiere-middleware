@@ -91,6 +91,12 @@ public class LoginTokenAccess implements IThirdPartyAccessGenerator {
         	throw new AdempiereException("@AD_TokenDefinition_ID@ @NotFound@");
         }
         MADTokenDefinition definition = MADTokenDefinition.getById(Env.getCtx(), token.getAD_TokenDefinition_ID(), null);
+        //	Used for third Party Access
+        MSession session = new MSession (Env.getCtx(), null);
+        session.setAD_Org_ID(roleId);
+        session.setAD_Role_ID(roleId);
+        session.setDescription("Created from Token");
+        session.saveEx();
         //	TODO: Generate from ADempiere
 		byte[] keyBytes = Decoders.BASE64.decode(SetupLoader.getInstance().getServer().getAdempiere_token());
         Key key = Keys.hmacShaKeyFor(keyBytes);
@@ -98,6 +104,7 @@ public class LoginTokenAccess implements IThirdPartyAccessGenerator {
                 .setSubject(String.valueOf(Env.getAD_Org_ID(Env.getCtx())))
                 .setId(String.valueOf(userId))
                 .setAudience(String.valueOf(roleId))
+                .setIssuer(String.valueOf(session.getAD_Session_ID()))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact());
 		// Digest computation
@@ -114,12 +121,6 @@ public class LoginTokenAccess implements IThirdPartyAccessGenerator {
         token.setAD_User_ID(userId);
         token.setAD_Role_ID(roleId);
         token.saveEx();
-        //	Used for third Party Access
-        MSession session = new MSession (Env.getCtx(), null);
-        session.setAD_Org_ID(roleId);
-        session.setAD_Role_ID(roleId);
-        session.setDescription("Created from Token");
-        session.saveEx();
         return userTokenValue;
 	}
 

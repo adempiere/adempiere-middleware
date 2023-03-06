@@ -16,6 +16,7 @@
 package org.spin.grpc.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -152,8 +153,8 @@ public class ValueManager {
 			return Value.newBuilder().setValueType(ValueType.DATE);
 		}
 		return Value.newBuilder()
-			.setLongValue(
-				getLongFromTimestamp(value)
+			.setDateValue(
+				getStringFromDate(value)
 			)
 			.setValueType(ValueType.DATE);
 	}
@@ -214,7 +215,7 @@ public class ValueManager {
 			return null;
 		}
 		return new BigDecimal(decimalValue.getDecimalValue())
-			.setScale(decimalValue.getScale());
+			.setScale(decimalValue.getScale(), RoundingMode.HALF_UP);
 	}
 	
 	/**
@@ -223,8 +224,8 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Timestamp getDateFromValue(Value value) {
-		if(value.getLongValue() > 0) {
-			return new Timestamp(value.getLongValue());
+		if(!Util.isEmpty(value.getDateValue())) {
+			return getDateFromString(value.getDateValue());
 		}
 		return null;
 	}
@@ -700,6 +701,18 @@ public class ValueManager {
 		} catch (Exception e) {
 			throw new AdempiereException(e);
 		}
+	}
+	
+	/**
+	 * VGet string from date
+	 * @param date
+	 * @return
+	 */
+	public static String getStringFromDate(Timestamp date) {
+		if(date == null) {
+			return "";
+		}
+		return new SimpleDateFormat(TIME_FORMAT).format(date);
 	}
 	
 	/**

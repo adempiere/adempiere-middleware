@@ -64,7 +64,7 @@ public class Service {
 			throw new AdempiereException("@Error@ PO is null");
 		}
 		request.getAttributesList().forEach(attribute -> {
-			Object value = ValueManager.getObjectFromValue(attribute.getValue());;
+			Object value = ValueManager.getObjectFromValue(attribute.getValue());
 			entity.set_ValueOfColumn(attribute.getKey(), value);
 		});
 		//	Save entity

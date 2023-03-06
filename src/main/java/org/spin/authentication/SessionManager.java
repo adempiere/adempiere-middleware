@@ -36,6 +36,7 @@ import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.compiere.util.Ini;
+import org.compiere.util.TimeUtil;
 import org.compiere.util.Util;
 import org.spin.model.MADToken;
 import org.spin.model.MADTokenDefinition;
@@ -80,24 +81,26 @@ public class SessionManager {
 		if(roleId < 0) {
 			throw new AdempiereException("@AD_User_ID@ / @AD_Role_ID@ / @AD_Org_ID@ @NotFound@");
 		}
+		Env.setContext (context, "#Date", TimeUtil.getDay(System.currentTimeMillis()));
 		MRole role = MRole.get(context, roleId);
 		//	Warehouse / Org
 		Env.setContext (context, "#M_Warehouse_ID", warehouseId);
-		Env.setContext (context, "#AD_Session_ID", 0);
-		//  Client Info
-		MClient client = MClient.get(context, role.getAD_Client_ID());
-		Env.setContext(context, "#AD_Client_ID", client.getAD_Client_ID());
+		Env.setContext(context, "#AD_Client_ID", role.getAD_Client_ID());
 		Env.setContext(context, "#AD_Org_ID", organizationId);
 		//	Role Info
 		Env.setContext(context, "#AD_Role_ID", roleId);
 		//	User Info
 		Env.setContext(context, "#AD_User_ID", userId);
+		if(token.getAD_Token_ID() > 0) {
+			Env.setContext (Env.getCtx(), "#AD_Session_ID", 0);
+		}
 		//	
 		MSession session = MSession.get(context, true);
 		Env.setContext (context, "#AD_Session_ID", session.getAD_Session_ID());
-		Env.setContext (context, "#Session_UUID", session.getUUID());
 		//	Load preferences
-		loadDefaultSessionValues(context, null);
+		if(token.getAD_Token_ID() > 0) {
+			loadDefaultSessionValues(context, null);
+		}
 	}
 	
 	/**
@@ -106,14 +109,6 @@ public class SessionManager {
 	 */
 	public static int getSessionId() {
 		return Env.getContextAsInt(Env.getCtx(), "#AD_Session_ID");
-	}
-	
-	/**
-	 * Get uuid of current session
-	 * @return
-	 */
-	public static String getSessionUuid() {
-		return Env.getContext(Env.getCtx(), "#Session_UUID");
 	}
 	
 	/**
@@ -127,22 +122,30 @@ public class SessionManager {
 		}
 		//	
 		try {
-			ITokenGenerator generator = TokenGeneratorHandler.getInstance().getTokenGenerator(MADTokenDefinition.TOKENTYPE_ThirdPartyAccess);
-			if(generator == null) {
-				throw new AdempiereException("@AD_TokenDefinition_ID@ @NotFound@");
+			String [] values = tokenValue.split("[.]");
+			//	Is a JWT
+			if(values != null && values.length == 3) {
+				IThirdPartyAccessGenerator generator = new LoginTokenAccess();
+				generator.validateToken(tokenValue);
+				return generator.getToken();
+			} else {
+				ITokenGenerator generator = TokenGeneratorHandler.getInstance().getTokenGenerator(MADTokenDefinition.TOKENTYPE_ThirdPartyAccess);
+				if(generator == null) {
+					throw new AdempiereException("@AD_TokenDefinition_ID@ @NotFound@");
+				}
+				//	No child of definition
+				if(!IThirdPartyAccessGenerator.class.isAssignableFrom(generator.getClass())) {
+					throw new AdempiereException("@AD_TokenDefinition_ID@ @Invalid@");	
+				}
+				//	Validate
+				IThirdPartyAccessGenerator thirdPartyAccessGenerator = ((IThirdPartyAccessGenerator) generator);
+				if(!thirdPartyAccessGenerator.validateToken(tokenValue)) {
+					throw new AdempiereException("@Invalid@ @AD_Token_ID@");
+				}
+				//	Default
+				MADToken token = thirdPartyAccessGenerator.getToken();
+				return token;
 			}
-			//	No child of definition
-			if(!IThirdPartyAccessGenerator.class.isAssignableFrom(generator.getClass())) {
-				throw new AdempiereException("@AD_TokenDefinition_ID@ @Invalid@");	
-			}
-			//	Validate
-			IThirdPartyAccessGenerator thirdPartyAccessGenerator = ((IThirdPartyAccessGenerator) generator);
-			if(!thirdPartyAccessGenerator.validateToken(tokenValue)) {
-				throw new AdempiereException("@Invalid@ @AD_Token_ID@");
-			}
-			//	Default
-			MADToken token = thirdPartyAccessGenerator.getToken();
-			return token;
 		} catch (Exception e) {
 			throw new AdempiereException(e);
 		}

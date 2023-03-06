@@ -68,7 +68,7 @@ public class MiddlewareClient {
                 		SetupLoader.getInstance().getServer().getPort())
                 .usePlaintext()
                 .build();
-        //	ba54a050aaf4a9cfc619a31afbb03d212b5024a9957fa8b069a8c1b742de8c878846244f9c4b6834
+        //	a0ccef68508c276749ada15cb568eb1f758128ddc11cfe7ebd628321d98ff78bd52fd6c3f0dca14845fcac5a883b25d5f2cbfb820ef974174be469c5e7d6af74
         MiddlewareServiceBlockingStub 
                  client = MiddlewareServiceGrpc
                  .newBlockingStub(channel);
@@ -76,7 +76,10 @@ public class MiddlewareClient {
         	byte[] keyBytes = Decoders.BASE64.decode(SetupLoader.getInstance().getServer().getAdempiere_token());
             Key key = Keys.hmacShaKeyFor(keyBytes);
             BearerToken token = new BearerToken(Jwts.builder()
-                    .setSubject("MiddlewareClient")
+            		.setId("101")
+            		.setAudience("102")
+                    .setSubject("11")
+                    .setIssuer("1015340")
                     .signWith(key, SignatureAlgorithm.HS256)
                     .compact());
             client.withCallCredentials(token);

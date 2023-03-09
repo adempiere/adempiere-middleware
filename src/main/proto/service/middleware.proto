@@ -29,7 +29,7 @@ option java_multiple_files = true;
  
  // Define value for object
  message Value {
-     int32 int_value = 1;
+     int32 integer_value = 1;
      bool boolean_value = 2;
      string string_value = 3;
      string date_value = 4;

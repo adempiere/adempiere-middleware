@@ -165,7 +165,7 @@ public class Service {
 			// Add record as parameter
 			Value.Builder value = Value.newBuilder()
 				.setValueType(ValueType.INTEGER)
-				.setIntValue(request.getId());
+				.setIntegerValue(request.getId());
 			KeyValue.Builder recordParameter = KeyValue.newBuilder()
 				.setKey(request.getTableName() + "_ID")
 				.setValue(value);

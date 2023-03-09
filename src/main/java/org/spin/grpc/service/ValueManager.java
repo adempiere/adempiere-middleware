@@ -90,7 +90,7 @@ public class ValueManager {
 	public static Value.Builder getValueFromInteger(Integer value) {
 		Value.Builder convertedValue = Value.newBuilder().setValueType(ValueType.INTEGER);
 		if(value != null) {
-			convertedValue.setIntValue((Integer)value);
+			convertedValue.setIntegerValue((Integer)value);
 		}
 		//	default
 		return convertedValue;
@@ -102,7 +102,7 @@ public class ValueManager {
 	 */
 	public static Value.Builder getValueFromInt(int value) {
 		Value.Builder convertedValue = Value.newBuilder().setValueType(ValueType.INTEGER);
-		convertedValue.setIntValue(Integer.valueOf(value));
+		convertedValue.setIntegerValue(Integer.valueOf(value));
 		// default
 		return convertedValue;
 	}
@@ -194,7 +194,7 @@ public class ValueManager {
 	public static BigDecimal getDecimalFromValue(Value value) {
 		if (Util.isEmpty(value.getDecimalValue().getDecimalValue(), true)) {
 			if (value.getValueType() == ValueType.INTEGER) {
-				return BigDecimal.valueOf(value.getIntValue());
+				return BigDecimal.valueOf(value.getIntegerValue());
 			}
 			if (value.getValueType() == ValueType.STRING) {
 				return getBigDecimalFromString(value.getStringValue());
@@ -263,7 +263,7 @@ public class ValueManager {
 	 * @return
 	 */
 	public static int getIntegerFromValue(Value value) {
-		return value.getIntValue();
+		return value.getIntegerValue();
 	}
 	
 	/**
@@ -424,7 +424,7 @@ public class ValueManager {
 		} else if(value.getValueType().equals(ValueType.DECIMAL)) {
 			return getDecimalFromValue(value);
 		} else if(value.getValueType().equals(ValueType.INTEGER)) {
-			return value.getIntValue();
+			return value.getIntegerValue();
 		} else if(value.getValueType().equals(ValueType.STRING)) {
 			return getStringFromValue(value, uppercase);
 		} else if(value.getValueType().equals(ValueType.DATE)) {

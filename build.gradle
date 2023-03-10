@@ -135,6 +135,7 @@ dependencies {
 	implementation "${baseGroupId}:telegram-notifier:${baseVersion}"
 	implementation "${baseGroupId}:tools:${baseVersion}"
 	implementation "${baseGroupId}:jasperreports:${baseVersion}"
+	implementation "io.github.adempiere:adempiere-business-processors:1.0.0"
 	implementation "org.erpya.adempiere.tools:exchange-operation-system:${privateDependencyBaseVersion}-1.2.8"
 	implementation "org.erpya.adempiere.tools:packout-exporter:${privateDependencyBaseVersion}-1.0.6"
 	implementation "org.erpya.adempiere.tools:third-party-access:${privateDependencyBaseVersion}-1.0.6"

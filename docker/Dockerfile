@@ -23,7 +23,7 @@ FROM eclipse-temurin:11-jdk-alpine
 ENV \
 	SERVER_PORT="50059" \
 	SERVER_LOG_LEVEL="WARNING" \
-	AD_TOKEN="" \
+	SERVER_PRIVATE_KEY="" \
 	DB_HOST="localhost" \
 	DB_PORT="5432" \
 	DB_NAME="adempiere" \

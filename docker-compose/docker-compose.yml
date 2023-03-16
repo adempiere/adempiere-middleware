@@ -45,8 +45,8 @@ services:
       
 networks:
   adempiere_network:
-    name: adempiere_network
+    name: ${ADEMPIERE_NETWORK}
     
 volumes:
   volume_postgres:
-    name: volume_postgres
+    name: ${POSTGRES_NETWORK}

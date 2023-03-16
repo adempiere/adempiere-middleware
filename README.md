@@ -44,3 +44,32 @@ docker run -d -p 50059:50059 --name adempiere-middleware -e SERVER_PRIVATE_KEY="
 ```
 
 See all images [here](https://hub.docker.com/r/openls/adempiere-middleware)
+
+## Run with Docker Compose
+
+You can also run it with `docker compose` for develop enviroment. Note that this is a easy way for start the service with PostgreSQL and middleware.
+
+### Requirements
+
+- [Docker Compose v2.16.0 or later](https://docs.docker.com/compose/install/linux/)
+
+```Shell
+docker compose version
+Docker Compose version v2.16.0
+```
+
+## Run it
+
+Just go to `docker-compose` folder and run it
+
+```Shell
+cd docker-compose
+```
+
+```Shell
+docker compose up
+```
+
+### Some Variables
+
+You can change variables editing the `.env` file. Note that this file have a minimal example.

@@ -9,9 +9,9 @@ plugins {
 group 'com.nikhilm'
 sourceCompatibility = 1.11
 def grpcVersion = '1.53.0'
-def baseVersion = '3.9.4'
-def baseGroupId = 'io.github.adempiere'
-def privateDependencyBaseVersion = "adempiere-3.9.4"
+def baseVersion = 'erpya-3.9.4-1.0.0'
+def baseGroupId = 'com.erpya'
+def customBaseVersion = "adempiere-3.9.4"
 startScripts.enabled = false
 
 ext {
@@ -140,6 +140,82 @@ dependencies {
 	implementation "io.github.adempiere:adempiere-business-processors:1.0.0"
 	//	Others
     compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
+    //	Foreign ADempiere Library
+	implementation "io.github.adempiere:adempiere-pos-improvements:1.0.0"
+	// ADempiere External Libraries
+	implementation "org.erpya.adempiere.tools:exchange-operation-system:${customBaseVersion}-1.2.8"
+	implementation "org.erpya.adempiere.tools:packout-exporter:${customBaseVersion}-1.0.6"
+	implementation "org.erpya.adempiere.tools:third-party-access:${customBaseVersion}-1.0.6"
+	implementation "org.erpya.adempiere.tools:financial-report:${customBaseVersion}-1.0.1"
+	implementation "org.erpya.adempiere.tools:default-attribute:${customBaseVersion}-1.0.1"
+	implementation "org.erpya.adempiere.tools:update-management:${customBaseVersion}-1.1.9"
+	implementation "org.erpya.adempiere.tools:mini-retail:${customBaseVersion}-1.1.7"
+	implementation "org.erpya.adempiere.tools:e-commerce-queue:${customBaseVersion}-1.1.5"
+	implementation "org.erpya.adempiere.tools:vue-storefront-api:${customBaseVersion}-1.0.1"
+	implementation "org.erpya.adempiere.tools:mercado-libre-venezuela-api:${customBaseVersion}-1.0.8"
+	implementation "org.erpya.adempiere.tools:common-functionalities:${customBaseVersion}-1.0.0"
+	implementation "org.erpya.adempiere.tools:time-control:${customBaseVersion}-1.0.2"
+	// Stable
+	implementation "org.erpya.adempiere.tools:get-weight:${customBaseVersion}-1.2.4"
+	implementation "org.erpya.adempiere.tools:record-weight:${customBaseVersion}-1.0.7"
+	implementation "org.erpya.adempiere.tools:consigned-material:${customBaseVersion}-1.3.0"
+	implementation "org.erpya.adempiere.tools:cash-management:${customBaseVersion}-1.1.6"
+	implementation "org.erpya.adempiere.tools:costing-engine-improvements:${customBaseVersion}-1.0.1"
+	implementation "org.erpya.adempiere.tools:currency-convert-documents:${customBaseVersion}-1.1.8"
+	implementation "org.erpya.adempiere.tools:performance-analysis:${customBaseVersion}-1.1.4"
+	implementation "org.erpya.adempiere.tools:queue-manager:${customBaseVersion}-1.0.7"
+	implementation "org.erpya.adempiere.tools:notification-queue:${customBaseVersion}-1.1.6"
+
+	implementation "org.erpya.adempiere.tools:material-management-improvements:${customBaseVersion}-1.1.6"
+	implementation "org.erpya.adempiere.tools:warehouse-management-system-improvements:${customBaseVersion}-1.1.6"
+	implementation "org.erpya.adempiere.tools:print-queue:${customBaseVersion}-1.1.4"
+	implementation "org.erpya.adempiere.tools:telegram-notifier:${customBaseVersion}-1.0.5"
+	implementation "org.erpya.adempiere.tools:hr-time-attendance:${customBaseVersion}-1.0.0"
+	implementation "org.erpya.adempiere.tools:hr-time-attendance:${customBaseVersion}-1.0.3"
+	//	System Administrator Libraries
+	implementation "org.erpya.adempiere.admin:core-tools:${customBaseVersion}-1.5.0"
+	//	Changes to be add to ADempiere core
+	implementation "org.erpya.adempiere.core:additional-reports:${customBaseVersion}-1.2.7"
+	//	ADempiere specific features
+	//implementation "org.erpya.adempiere.replication:rethinkdb-replicator-client:${customBaseVersion}-1.1.5"
+	//implementation "org.erpya.adempiere.replication:kafka-replicator-client:${customBaseVersion}-1.0.9"
+	//implementation "org.erpya.adempiere.replication:json-replicator-client:${customBaseVersion}-1.0.2"
+	implementation "org.erpya.adempiere.fiscal-printer:fiscal-printer-client:${customBaseVersion}-1.5.8"
+	implementation "org.erpya.adempiere.payroll:erp-payroll-definition:${customBaseVersion}-1.0.7"
+	implementation "org.erpya.adempiere.store:internal-store:${customBaseVersion}-1.0.5"
+	//	ADempiere Verticals
+	implementation "org.erpya.adempiere.verticals:raw-material-receipt:${customBaseVersion}-1.1.7"
+	implementation "org.erpya.adempiere.verticals:farmer-assistance-program:${customBaseVersion}-1.5.3"
+	implementation "org.erpya.adempiere.verticals:travel-agency-management:${customBaseVersion}-1.1.1"
+	implementation "org.erpya.adempiere.verticals:delivery-management-service:${customBaseVersion}-1.2.0"
+	implementation "org.erpya.adempiere.verticals:sales-force-management:${customBaseVersion}-1.2.9"
+	implementation "org.erpya.adempiere.verticals:import-export-management:${customBaseVersion}-1.0.8"
+	//implementation "org.erpya.adempiere.locations:fap-venezuela-location:${customBaseVersion}-1.1.2"
+	implementation "org.erpya.adempiere.cloud:cloud-service-management:${customBaseVersion}-1.2.9"
+	implementation "org.erpya.adempiere.locations:additional-withholding-tax:${customBaseVersion}-1.2.3"
+	
+	//	Migration
+	implementation "org.erpya.adempiere.migration:migration-tools:${customBaseVersion}-1.0.4"
+	//	External Tools
+	implementation "org.erpya.fiscal-printer.tools:fiscal-printer-api:${customBaseVersion}-1.3.7"
+	//	External Library
+	implementation "com.amazonaws:aws-java-sdk-s3:1.11.795"
+	implementation "joda-time:joda-time:2.8.1"
+	implementation "log4j:log4j:1.2.16"
+	implementation "com.fasterxml.jackson.core:jackson-databind:2.6.7.4"
+	implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.6.7"
+	implementation "com.rethinkdb:rethinkdb-driver:2.4.4"
+	implementation "org.codehaus.jettison:jettison:1.5.0"
+	implementation "com.github.instagram4j:instagram4j:2.0.6"
+	implementation "com.itextpdf:itext-pdfa:5.5.2"
+	implementation "com.lowagie:itext:2.1.7"
+	//	Elastic Search
+	implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:7.9.1"
+	//	Public Libraries
+	implementation "io.github.adempiere:withholding-engine:${customBaseVersion}-1.2.8"
+	implementation "io.github.adempiere:location-venezuela:${customBaseVersion}-2.2.1"
+	//	Patches
+	implementation "org.erpya.adempiere:patch:1.0.4"
 }
 
 

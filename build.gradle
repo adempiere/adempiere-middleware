@@ -4,6 +4,7 @@ plugins {
     id 'idea'
     id 'application'
     id 'visual-studio'
+    id 'maven-publish'
 }
 group 'com.nikhilm'
 sourceCompatibility = 1.11

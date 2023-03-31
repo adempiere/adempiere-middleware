@@ -1,7 +1,8 @@
-FROM gradle:8.0.1 as builder
+FROM gradle:8.0.2 as builder
 ARG BUILD_ARTIFACT \
 	GITHUB_DEPLOY_USER \
-	GITHUB_DEPLOY_TOKEN
+	GITHUB_DEPLOY_TOKEN \
+	GITHUB_DEPLOY_REPOSITORY
 
 LABEL maintainer="ysenih@erpya.com" \
 	description="ADempiere gRPC Middleware used as ADempiere backend as little core"
@@ -11,6 +12,10 @@ WORKDIR /opt/apps/server
 COPY . . /opt/apps/server/
 
 EXPOSE ${SERVER_PORT}
+
+ENV GITHUB_DEPLOY_USER=$GITHUB_DEPLOY_USER \
+	GITHUB_DEPLOY_TOKEN=$GITHUB_DEPLOY_TOKEN \ 
+	GITHUB_DEPLOY_REPOSITORY=$GITHUB_DEPLOY_REPOSITORY
 
 RUN gradle build && \
 	unzip -d /opt/apps build/distributions/adempiere-middleware.zip && \
@@ -53,5 +58,13 @@ RUN	rm -rf /var/cache/apk/* && \
 
 COPY --from=builder /opt/apps/adempiere-middleware/ /opt/apps/server/
 
+RUN addgroup adempiere && \
+	adduser --disabled-password --gecos "" --ingroup adempiere --no-create-home adempiere && \
+	chown -R adempiere /opt/apps/server/ && \
+	chmod +x start.sh
+
+USER adempiere
+
 # Start app
-CMD	'sh' 'start.sh'
+ENTRYPOINT ["sh" , "start.sh"]
+

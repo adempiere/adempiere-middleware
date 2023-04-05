@@ -235,7 +235,7 @@ jobs:
       - name: Build image
         run: docker buildx build --platform linux/amd64,linux/amd64/v2,linux/arm64/v8 -t ${{ github.event.repository.name }} --build-arg GITHUB_DEPLOY_USER="${{ github.actor }}" --build-arg GITHUB_DEPLOY_TOKEN="${{ secrets.DEPLOY_TOKEN }}" --build-arg GITHUB_DEPLOY_REPOSITORY="${{ secrets.DEPLOY_REPOSITORY }}" -f docker/Dockerfile .
       - name: Tag image
-        run: docker tag ${{ github.event.repository.name }} registry.digitalocean.com/${{ secrets.DIGITALOCEAN_ORGANIZATION }}/${{ github.event.repository.name }}:${{ github.event.release.tag_name }}
+        run: docker buildx tag ${{ github.event.repository.name }} registry.digitalocean.com/${{ secrets.DIGITALOCEAN_ORGANIZATION }}/${{ github.event.repository.name }}:${{ github.event.release.tag_name }}
       - name: Push image to DO Container Registry
-        run: docker push registry.digitalocean.com/${{ secrets.DIGITALOCEAN_ORGANIZATION }}/${{ github.event.repository.name }}:${{ github.event.release.tag_name }}
+        run: docker buildx push registry.digitalocean.com/${{ secrets.DIGITALOCEAN_ORGANIZATION }}/${{ github.event.repository.name }}:${{ github.event.release.tag_name }}
             

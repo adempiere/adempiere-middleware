@@ -184,7 +184,7 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile
-          platforms: linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/amd64/v4,linux/386,linux/arm64/v8
+          platforms: linux/amd64,linux/amd64/v2,linux/arm64/v8
           push: true
           tags: |
             ${{ secrets.DOCKER_REPO_ADEMPIERE_MIDDLEWARE }}:${{ github.event.release.tag_name }}

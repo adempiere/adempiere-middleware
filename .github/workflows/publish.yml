@@ -163,31 +163,21 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
-
       - name: Download build dist app
         uses: actions/download-artifact@v3
         with:
           name: adempiere-middleware.zip
-          path: dist
-
-      - name: Unzip dist file
+      - name: Unzip Asset
         run: |
-          cd dist
-          unzip -o adempiere-middleware.zip
-
+          unzip adempiere-middleware.zip -d docker/
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
           # CONFIGURE DOCKER SECRETS INTO REPOSITORY
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
-
       - name: Push alpine image in Docker Hub
         uses: docker/build-push-action@v2
-        env:
-          GITHUB_DEPLOY_USER: "${{ github.actor }}"
-          GITHUB_DEPLOY_TOKEN: "${{ secrets.DEPLOY_TOKEN }}"
-          GITHUB_DEPLOY_REPOSITORY: ${{ secrets.DEPLOY_REPOSITORY }}
         with:
           context: .
           file: docker/Dockerfile.alpine
@@ -208,6 +198,13 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
+      - name: Download build dist app
+        uses: actions/download-artifact@v3
+        with:
+          name: adempiere-middleware.zip
+      - name: Unzip Asset
+        run: |
+          unzip adempiere-middleware.zip -d docker/
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -221,10 +218,6 @@ jobs:
 
       - name: Push alpine image in Docker Hub
         uses: docker/build-push-action@v4
-        env:
-          GITHUB_DEPLOY_USER: "${{ github.actor }}"
-          GITHUB_DEPLOY_TOKEN: "${{ secrets.DEPLOY_TOKEN }}"
-          GITHUB_DEPLOY_REPOSITORY: ${{ secrets.DEPLOY_REPOSITORY }}
         with:
           context: .
           file: docker/Dockerfile
@@ -233,52 +226,3 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_REPO_ADEMPIERE_MIDDLEWARE }}:${{ github.event.release.tag_name }}
             ${{ secrets.DOCKER_REPO_ADEMPIERE_MIDDLEWARE }}:latest
-
-  # Check secrets to push image in docker hub registry
-  check-digital-ocean-secrets:
-    name: Check if digital ocean registry information was set on secrets
-    needs:
-      - build-app
-    runs-on: ubuntu-latest
-    outputs:
-      is_have_secrets: ${{ steps.check_secret_job.outputs.is_have_secrets }}
-    steps:
-      - id: check_secret_job
-        run: |
-          if [[ "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" != "" && \
-                "${{ secrets.DIGITALOCEAN_ORGANIZATION }}" != "" ]]; \
-          then
-            echo "Secrets to use a container registry are configured in the repo"
-            echo "is_have_secrets=true" >> $GITHUB_OUTPUT
-          else
-            echo "Secrets to use a container registry were not configured in the repo"
-            echo "is_have_secrets=false" >> $GITHUB_OUTPUT
-          fi
-
-  push-imame-do:
-    name: Push Docker image to Digital Ocean
-    needs:
-      - check-digital-ocean-secrets
-    # Skip step based on secret
-    if: needs.check-digital-ocean-secrets.outputs.is_have_secrets == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v3
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-      - name: Log in to DO Container Registry
-        run: doctl registry login --expiry-seconds 600
-      - name: Build image
-        run: docker buildx build --platform linux/amd64,linux/amd64/v2,linux/arm64/v8 -t ${{ github.event.repository.name }} --build-arg GITHUB_DEPLOY_USER="${{ github.actor }}" --build-arg GITHUB_DEPLOY_TOKEN="${{ secrets.DEPLOY_TOKEN }}" --build-arg GITHUB_DEPLOY_REPOSITORY="${{ secrets.DEPLOY_REPOSITORY }}" -f docker/Dockerfile .
-      - name: Tag image
-        run: docker buildx tag ${{ github.event.repository.name }} registry.digitalocean.com/${{ secrets.DIGITALOCEAN_ORGANIZATION }}/${{ github.event.repository.name }}:${{ github.event.release.tag_name }}
-      - name: Push image to DO Container Registry
-        run: docker buildx push registry.digitalocean.com/${{ secrets.DIGITALOCEAN_ORGANIZATION }}/${{ github.event.repository.name }}:${{ github.event.release.tag_name }}
-            

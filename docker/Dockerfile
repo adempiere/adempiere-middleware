@@ -20,6 +20,8 @@ COPY docker/adempiere-middleware /opt/apps/server
 COPY docker/env.yaml /opt/apps/server/env.yaml
 COPY docker/start.sh /opt/apps/server/start.sh
 
+EXPOSE ${SERVER_PORT}
+
 # timezone
 ENV TZ America/Caracas
 

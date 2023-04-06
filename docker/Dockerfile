@@ -1,27 +1,3 @@
-FROM gradle:8.0.2 as builder
-ARG BUILD_ARTIFACT \
-	GITHUB_DEPLOY_USER \
-	GITHUB_DEPLOY_TOKEN \
-	GITHUB_DEPLOY_REPOSITORY
-
-LABEL maintainer="ysenih@erpya.com" \
-	description="ADempiere gRPC Middleware used as ADempiere backend as little core"
-
-WORKDIR /opt/apps/server
-
-COPY . . /opt/apps/server/
-
-EXPOSE ${SERVER_PORT}
-
-ENV GITHUB_DEPLOY_USER=$GITHUB_DEPLOY_USER \
-	GITHUB_DEPLOY_TOKEN=$GITHUB_DEPLOY_TOKEN \ 
-	GITHUB_DEPLOY_REPOSITORY=$GITHUB_DEPLOY_REPOSITORY
-
-RUN gradle build && \
-	unzip -d /opt/apps build/distributions/adempiere-middleware.zip && \
-	mv docker/env.yaml /opt/apps/adempiere-middleware && \
-	mv docker/start.sh /opt/apps/adempiere-middleware
-
 FROM eclipse-temurin:11-jdk-focal
 
 # Init ENV with default values
@@ -38,6 +14,11 @@ ENV \
 	ADEMPIERE_APPS_TYPE=""
 
 WORKDIR /opt/apps/server
+
+# Copy src files
+COPY docker/adempiere-middleware /opt/apps/server
+COPY docker/env.yaml /opt/apps/server/env.yaml
+COPY docker/start.sh /opt/apps/server/start.sh
 
 # timezone
 ENV TZ America/Caracas

@@ -23,6 +23,8 @@ COPY docker/start.sh /opt/apps/server/start.sh
 # timezone
 ENV TZ America/Caracas
 
+EXPOSE ${SERVER_PORT}
+
 # Add operative system dependencies
 RUN	apt-get update && apt-get install -y tzdata \
 		bash \

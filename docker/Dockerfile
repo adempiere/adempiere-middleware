@@ -31,8 +31,6 @@ RUN	apt-get update && apt-get install -y tzdata \
 		rm -rf /var/lib/apt/lists/* \
 		echo "Set Timezone..." && \
 	 	echo $TZ > /etc/timezone
-		
-COPY --from=builder /opt/apps/adempiere-middleware/ /opt/apps/server/
 
 RUN addgroup adempiere && \
 	adduser --disabled-password --gecos "" --ingroup adempiere --no-create-home adempiere && \

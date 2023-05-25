@@ -130,11 +130,14 @@ public class LoginTokenAccess implements IThirdPartyAccessGenerator {
         JwtParser parser = Jwts.parserBuilder().setSigningKey(SetupLoader.getInstance().getServer().getAdempiere_token()).build();
         Jws<Claims> claims = parser.parseClaimsJws(tokenValue);
         token = new MADToken(Env.getCtx(), 0, null);
-		token.setAD_User_ID(Integer.parseInt(claims.getBody().getId()));
-		token.setAD_Role_ID(Integer.parseInt(claims.getBody().getAudience()));
-		token.setAD_Org_ID(Integer.parseInt(claims.getBody().getSubject()));
-		if(!Util.isEmpty(claims.getBody().getIssuer())) {
-			Env.setContext(Env.getCtx(), "#AD_Session_ID", Integer.parseInt(claims.getBody().getIssuer()));
+//		int warehouseId = claims.getBody().get("M_Warehouse_ID", Integer.class);
+		String language = claims.getBody().get("AD_Language", String.class);
+		token.setAD_User_ID(claims.getBody().get("AD_User_ID", Integer.class));
+		token.setAD_Role_ID(claims.getBody().get("AD_Role_ID", Integer.class));
+		token.setAD_Org_ID(claims.getBody().get("AD_Org_ID", Integer.class));
+		Env.setContext(Env.getCtx(), Env.LANGUAGE, ContextManager.getDefaultLanguage(language));
+		if(!Util.isEmpty(claims.getBody().getId())) {
+			Env.setContext(Env.getCtx(), "#AD_Session_ID", Integer.parseInt(claims.getBody().getId()));
 		} else {
 			Env.setContext (Env.getCtx(), "#AD_Session_ID", 0);
 		}

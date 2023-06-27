@@ -38,6 +38,7 @@ import org.compiere.util.Env;
 import org.compiere.util.Ini;
 import org.compiere.util.TimeUtil;
 import org.compiere.util.Util;
+import org.spin.eca52.security.JWT;
 import org.spin.model.MADToken;
 import org.spin.model.MADTokenDefinition;
 import org.spin.util.IThirdPartyAccessGenerator;
@@ -125,8 +126,10 @@ public class SessionManager {
 			String [] values = tokenValue.split("[.]");
 			//	Is a JWT
 			if(values != null && values.length == 3) {
-				IThirdPartyAccessGenerator generator = new LoginTokenAccess();
+				JWT generator = new JWT();
 				generator.validateToken(tokenValue);
+				Env.setContext(Env.getCtx(), Env.LANGUAGE, ContextManager.getDefaultLanguage(generator.getLanguage()));
+				Env.setContext(Env.getCtx(), "#AD_Session_ID", generator.getSessionId());
 				return generator.getToken();
 			} else {
 				ITokenGenerator generator = TokenGeneratorHandler.getInstance().getTokenGenerator(MADTokenDefinition.TOKENTYPE_ThirdPartyAccess);

@@ -19,16 +19,21 @@ package org.spin.authentication;
 import java.math.BigDecimal;
 import java.security.Key;
 import java.sql.Timestamp;
+import java.util.Base64;
+import java.util.Map;
 import java.util.Optional;
 
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MSession;
+import org.compiere.model.MSysConfig;
 import org.compiere.util.Env;
 import org.compiere.util.Util;
+import org.spin.eca52.util.JWTUtil;
 import org.spin.model.MADToken;
 import org.spin.model.MADTokenDefinition;
-import org.spin.server.setup.SetupLoader;
 import org.spin.util.IThirdPartyAccessGenerator;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -98,7 +103,11 @@ public class LoginTokenAccess implements IThirdPartyAccessGenerator {
         session.setDescription("Created from Token");
         session.saveEx();
         //	TODO: Generate from ADempiere
-		byte[] keyBytes = Decoders.BASE64.decode(SetupLoader.getInstance().getServer().getAdempiere_token());
+        String secretKey = MSysConfig.getValue(JWTUtil.ECA52_JWT_SECRET_KEY, session.getAD_Client_ID());
+		if(Util.isEmpty(secretKey)) {
+			throw new AdempiereException("@InternalError@");
+		}
+		byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         Key key = Keys.hmacShaKeyFor(keyBytes);
         BearerToken generatedToken = new BearerToken(Jwts.builder()
                 .setSubject(String.valueOf(Env.getAD_Org_ID(Env.getCtx())))
@@ -127,21 +136,41 @@ public class LoginTokenAccess implements IThirdPartyAccessGenerator {
 	@Override
 	public boolean validateToken(String tokenValue) {
 		//	Create ADempiere session, throw a error if it not exists
-        JwtParser parser = Jwts.parserBuilder().setSigningKey(SetupLoader.getInstance().getServer().getAdempiere_token()).build();
-        Jws<Claims> claims = parser.parseClaimsJws(tokenValue);
-        token = new MADToken(Env.getCtx(), 0, null);
-//		int warehouseId = claims.getBody().get("M_Warehouse_ID", Integer.class);
-		String language = claims.getBody().get("AD_Language", String.class);
-		token.setAD_User_ID(claims.getBody().get("AD_User_ID", Integer.class));
-		token.setAD_Role_ID(claims.getBody().get("AD_Role_ID", Integer.class));
-		token.setAD_Org_ID(claims.getBody().get("AD_Org_ID", Integer.class));
-		Env.setContext(Env.getCtx(), Env.LANGUAGE, ContextManager.getDefaultLanguage(language));
-		if(!Util.isEmpty(claims.getBody().getId())) {
-			Env.setContext(Env.getCtx(), "#AD_Session_ID", Integer.parseInt(claims.getBody().getId()));
-		} else {
-			Env.setContext (Env.getCtx(), "#AD_Session_ID", 0);
+		try {
+			Base64.Decoder decoder = Base64.getUrlDecoder();
+			String[] chunks = tokenValue.split("\\.");
+			if(chunks == null || chunks.length < 3) {
+				throw new AdempiereException("@TokenValue@ @NotFound@");
+			}
+			String payload = new String(decoder.decode(chunks[1]));
+			ObjectMapper mapper = new ObjectMapper();
+			@SuppressWarnings("unchecked")
+			Map<String, Object> dataAsMap = mapper.readValue(payload, Map.class);
+			Object clientAsObject = dataAsMap.get("AD_Client_ID");
+			if(clientAsObject == null
+					|| !clientAsObject.getClass().isAssignableFrom(Integer.class)) {
+				throw new AdempiereException("@Invalid@ @AD_Client_ID@");
+			}
+			String secretKey = MSysConfig.getValue(JWTUtil.ECA52_JWT_SECRET_KEY, (int) clientAsObject);
+			if(Util.isEmpty(secretKey)) {
+				throw new AdempiereException("@InternalError@");
+			}
+	        JwtParser parser = Jwts.parserBuilder().setSigningKey(secretKey).build();
+	        Jws<Claims> claims = parser.parseClaimsJws(tokenValue);
+	        token = new MADToken(Env.getCtx(), 0, null);
+			String language = claims.getBody().get("AD_Language", String.class);
+			token.setAD_User_ID(claims.getBody().get("AD_User_ID", Integer.class));
+			token.setAD_Role_ID(claims.getBody().get("AD_Role_ID", Integer.class));
+			token.setAD_Org_ID(claims.getBody().get("AD_Org_ID", Integer.class));
+			Env.setContext(Env.getCtx(), Env.LANGUAGE, ContextManager.getDefaultLanguage(language));
+			if(!Util.isEmpty(claims.getBody().getId())) {
+				Env.setContext(Env.getCtx(), "#AD_Session_ID", Integer.parseInt(claims.getBody().getId()));
+			} else {
+				Env.setContext (Env.getCtx(), "#AD_Session_ID", 0);
+			}
+		} catch (Exception e) {
+			new AdempiereException(e);
 		}
-		//	Is Ok
 		return true;
 	}
 }

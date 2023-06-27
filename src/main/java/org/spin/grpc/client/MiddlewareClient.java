@@ -23,7 +23,6 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import org.compiere.util.CLogger;
-import org.compiere.util.Util;
 import org.spin.authentication.BearerToken;
 import org.spin.proto.service.Entity;
 import org.spin.proto.service.KeyValue;
@@ -68,22 +67,20 @@ public class MiddlewareClient {
                 		SetupLoader.getInstance().getServer().getPort())
                 .usePlaintext()
                 .build();
-        //	a0ccef68508c276749ada15cb568eb1f758128ddc11cfe7ebd628321d98ff78bd52fd6c3f0dca14845fcac5a883b25d5f2cbfb820ef974174be469c5e7d6af74
         MiddlewareServiceBlockingStub 
                  client = MiddlewareServiceGrpc
                  .newBlockingStub(channel);
-        if(!Util.isEmpty(SetupLoader.getInstance().getServer().getAdempiere_token())) {
-        	byte[] keyBytes = Decoders.BASE64.decode(SetupLoader.getInstance().getServer().getAdempiere_token());
-            Key key = Keys.hmacShaKeyFor(keyBytes);
-            BearerToken token = new BearerToken(Jwts.builder()
-            		.setId("101")
-            		.setAudience("102")
-                    .setSubject("11")
-                    .setIssuer("1015340")
-                    .signWith(key, SignatureAlgorithm.HS256)
-                    .compact());
-            client.withCallCredentials(token);
-        }
+        String testToken = "Bearer ";
+        byte[] keyBytes = Decoders.BASE64.decode(testToken);
+        Key key = Keys.hmacShaKeyFor(keyBytes);
+        BearerToken token = new BearerToken(Jwts.builder()
+        		.setId("101")
+        		.setAudience("102")
+                .setSubject("11")
+                .setIssuer("1015340")
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact());
+        client.withCallCredentials(token);
         try {
         	SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
         	long start = System.currentTimeMillis();

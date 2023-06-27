@@ -18,7 +18,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-import org.compiere.util.Util;
 import org.spin.authentication.AuthorizationServerInterceptor;
 import org.spin.grpc.controller.MiddlewareServiceImplementation;
 import org.spin.server.setup.SetupLoader;
@@ -56,9 +55,7 @@ public class MiddlewareServer {
 				.sslContext(getSslContextBuilder().build());
 		} else {
 			serverBuilder = ServerBuilder.forPort(SetupLoader.getInstance().getServer().getPort());
-			if(!Util.isEmpty(SetupLoader.getInstance().getServer().getAdempiere_token())) {
-				serverBuilder.intercept(new AuthorizationServerInterceptor());
-			}
+			serverBuilder.intercept(new AuthorizationServerInterceptor());
 		}
 		serverBuilder.addService(new MiddlewareServiceImplementation());
 		server = serverBuilder.build().start();

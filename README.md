@@ -24,6 +24,17 @@ This project is the first initiative for improve ADempiere as a microservice bas
 I just want to improve ADempiere for many concorrent users.
 
 
+## Requirements
+
+The ADempiere middleware is a service to expose ADempiere as gRPC service with a little functionality of ADempiere:
+ 
+ - Create Entity
+ - Update Entity
+ - Delete Entity
+ - Delete Entity
+ 
+Since the ADempiere dependency is vital for this project is high recommended that the you are sure that of project [adempiere-jwt-token](https://github.com/adempiere/adempiere-jwt-token) is installed and the setup is runned in ADempiere Database.
+
 ## Run it from Gradle
 
 ```Shell
@@ -53,7 +64,6 @@ To use this Docker image you must have your Docker engine version greater than o
 - `DB_PASSWORD`: Database password that Adempiere-Backend will use to connect with the database. Default: `adempiere`
 - `SERVER_PORT`: Port to access adempiere-middleware from outside of the container. Default: `50059`
 - `SERVER_LOG_LEVEL`: Log Level. Default: `WARNING`
-- `SERVER_PRIVATE_KEY`: Private key used for validate sign with [JWT](https://jwt.io/introduction)
 - `TZ`: (Time Zone) Indicates the time zone to set in the nginx-based container, the default value is `America/Caracas` (UTC -4:00).
 
 You can download the last image from docker hub, just run the follow command:

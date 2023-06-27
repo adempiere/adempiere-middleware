@@ -35,8 +35,6 @@ public class Server {
 	private String trust_certificate_collection_file;
 	/**	Log Level	*/
 	private String log_level;
-	/**	ADempiere valid token	*/
-	private String adempiere_token;
 	/**	Embedded services	*/
 	private List<String> services;
 	/**
@@ -50,14 +48,13 @@ public class Server {
 	 * @param adempiere_token
 	 * @param services
 	 */
-	public Server(String host, int port, String certificate_chain_file, String private_key_file, String trust_certificate_collection_file, String log_level, String adempiere_token,  List<String> services) {
+	public Server(String host, int port, String certificate_chain_file, String private_key_file, String trust_certificate_collection_file, String log_level, List<String> services) {
 		this.host = host;
 		this.port = port;
 		this.certificate_chain_file = certificate_chain_file;
 		this.private_key_file = private_key_file;
 		this.trust_certificate_collection_file = trust_certificate_collection_file;
-		this.log_level = log_level;
-		this.adempiere_token = adempiere_token;
+		this.log_level = log_level;;
 		this.services = services;
 		if(this.log_level == null
 				|| this.log_level.trim().length() == 0) {
@@ -129,14 +126,6 @@ public class Server {
 	 */
 	public final String getLog_level() {
 		return log_level;
-	}
-
-	/**	
-	 * Get ADempiere token
-	 * @return
-	 */
-	public String getAdempiere_token() {
-		return adempiere_token;
 	}
 
 	/**

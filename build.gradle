@@ -139,6 +139,8 @@ dependencies {
 	implementation "${baseGroupId}:jasperreports:${baseVersion}"
 	implementation "${baseGroupId}:adempiere-business-processors:1.0.0"
 	implementation "${baseGroupId}:adempiere-jwt-token:1.0.0"
+	implementation "${baseGroupId}:adempiere-dashboard-improvements:1.0.0"
+	implementation "${baseGroupId}:adempiere-pos-improvements:1.0.0"
 	//	Others
     compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
 }

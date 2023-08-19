@@ -137,10 +137,11 @@ dependencies {
 	implementation "${baseGroupId}:telegram-notifier:${baseVersion}"
 	implementation "${baseGroupId}:tools:${baseVersion}"
 	implementation "${baseGroupId}:jasperreports:${baseVersion}"
-	implementation "${baseGroupId}:adempiere-business-processors:1.0.6"
+	implementation "${baseGroupId}:adempiere-business-processors:1.0.9"
 	implementation "${baseGroupId}:adempiere-jwt-token:1.0.2"
 	implementation "${baseGroupId}:adempiere-dashboard-improvements:1.0.7"
 	implementation "${baseGroupId}:adempiere-pos-improvements:1.0.0"
+	implementation "${baseGroupId}:adempiere-kafka-connector:1.0.0"
 	//	Others
     compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
 }

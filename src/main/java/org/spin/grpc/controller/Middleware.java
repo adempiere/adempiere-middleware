@@ -16,22 +16,42 @@ package org.spin.grpc.controller;
 
 import org.compiere.util.CLogger;
 import org.spin.grpc.service.Service;
-import org.spin.proto.service.Empty;
-import org.spin.proto.service.Entity;
 import org.spin.proto.service.CreateEntityRequest;
+import org.spin.proto.service.DeleteEntitiesBatchRequest;
 import org.spin.proto.service.DeleteEntityRequest;
+import org.spin.proto.service.Entity;
+import org.spin.proto.service.GetEntityRequest;
+import org.spin.proto.service.ListEntitiesRequest;
+import org.spin.proto.service.ListEntitiesResponse;
 import org.spin.proto.service.MiddlewareServiceGrpc.MiddlewareServiceImplBase;
 import org.spin.proto.service.RunBusinessProcessRequest;
 import org.spin.proto.service.RunBusinessProcessResponse;
 import org.spin.proto.service.UpdateEntityRequest;
 
+import com.google.protobuf.Empty;
+
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
-public class MiddlewareServiceImplementation extends MiddlewareServiceImplBase {
+public class Middleware extends MiddlewareServiceImplBase {
 	
 	/**	Logger			*/
-	private CLogger log = CLogger.getCLogger(MiddlewareServiceImplementation.class);
+	private CLogger log = CLogger.getCLogger(Middleware.class);
+	
+	@Override
+	public void getEntity(GetEntityRequest request, StreamObserver<Entity> responseObserver) {
+		try {
+			Entity.Builder entityValue = Service.getEntity(request);
+			responseObserver.onNext(entityValue.build());
+			responseObserver.onCompleted();
+		} catch (Exception e) {
+			log.severe(e.getLocalizedMessage());
+			responseObserver.onError(Status.INTERNAL
+					.withDescription(e.getLocalizedMessage())
+					.withCause(e)
+					.asRuntimeException());
+		}
+	}
 	
 	@Override
     public void createEntity(CreateEntityRequest request, StreamObserver<Entity> responseObserver) {
@@ -74,6 +94,38 @@ public class MiddlewareServiceImplementation extends MiddlewareServiceImplBase {
 				.asRuntimeException());
 		}
     }
+    
+    @Override
+	public void deleteEntitiesBatch(DeleteEntitiesBatchRequest request, StreamObserver<Empty> responseObserver) {
+		try {
+			Empty.Builder entityValue = Service.deleteEntities(request);
+			responseObserver.onNext(entityValue.build());
+			responseObserver.onCompleted();
+		} catch (Exception e) {
+			log.severe(e.getLocalizedMessage());
+			responseObserver.onError(Status.INTERNAL
+					.withDescription(e.getLocalizedMessage())
+					.withCause(e)
+					.asRuntimeException());
+		}
+	}
+	
+	@Override
+	public void listEntities(ListEntitiesRequest request, StreamObserver<ListEntitiesResponse> responseObserver) {
+		try {
+			ListEntitiesResponse.Builder entityValueList = Service.listEntities(request);
+			responseObserver.onNext(entityValueList.build());
+			responseObserver.onCompleted();
+		} catch (Exception e) {
+			log.severe(e.getLocalizedMessage());
+			e.printStackTrace();
+			responseObserver.onError(Status.INTERNAL
+				.withDescription(e.getLocalizedMessage())
+				.withCause(e)
+				.asRuntimeException()
+			);
+		}
+	}
     
     @Override
     public void runBusinessProcess(RunBusinessProcessRequest request, StreamObserver<RunBusinessProcessResponse> responseObserver) {

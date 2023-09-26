@@ -18,8 +18,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Logger;
 
+import org.compiere.util.Env;
 import org.spin.authentication.AuthorizationServerInterceptor;
-import org.spin.grpc.controller.MiddlewareServiceImplementation;
+import org.spin.grpc.controller.Middleware;
 import org.spin.server.setup.SetupLoader;
 
 import io.grpc.Server;
@@ -31,6 +32,7 @@ import io.grpc.ServerBuilder;
 
 public class MiddlewareServer {
 	private static final Logger logger = Logger.getLogger(MiddlewareServer.class.getName());
+	private ServiceContextProvider contextProvider =  new ServiceContextProvider();
 	private Server server;
 	/**
 	 * Get SSL / TLS context
@@ -47,6 +49,8 @@ public class MiddlewareServer {
 	}
 	
 	private void start() throws IOException {
+		//	Start based on provider
+        Env.setContextProvider(contextProvider);
 		logger.info("Service Middleware added on " + SetupLoader.getInstance().getServer().getPort());
 		//	
 		ServerBuilder<?> serverBuilder;
@@ -57,7 +61,7 @@ public class MiddlewareServer {
 			serverBuilder = ServerBuilder.forPort(SetupLoader.getInstance().getServer().getPort());
 			serverBuilder.intercept(new AuthorizationServerInterceptor());
 		}
-		serverBuilder.addService(new MiddlewareServiceImplementation());
+		serverBuilder.addService(new Middleware());
 		server = serverBuilder.build().start();
 		logger.info("Server started, listening on " + SetupLoader.getInstance().getServer().getPort());
 		Runtime.getRuntime().addShutdownHook(new Thread() {

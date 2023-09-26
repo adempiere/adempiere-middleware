@@ -20,8 +20,10 @@ import org.compiere.model.POInfo;
 import org.compiere.util.Env;
 import org.compiere.util.Msg;
 import org.spin.proto.service.Entity;
-import org.spin.proto.service.ProcessLog;
-import org.spin.proto.service.Value;
+import org.spin.proto.service.ProcessInfoLog;
+
+import com.google.protobuf.Struct;
+import com.google.protobuf.Value;
 
 /**
  * Class for convert any document
@@ -52,7 +54,7 @@ public class Converter {
 				continue;
 			}
 			//	Add
-			builder.putValues(columnName, builderValue.build());
+			builder.setValues(Struct.newBuilder().putFields(columnName, builderValue.build()));
 		}
 		//	
 		return builder;
@@ -63,8 +65,8 @@ public class Converter {
 	 * @param log
 	 * @return
 	 */
-	public static ProcessLog.Builder convertProcessInfoLog(org.compiere.process.ProcessInfoLog log) {
-		ProcessLog.Builder processLog = ProcessLog.newBuilder();
+	public static ProcessInfoLog.Builder convertProcessInfoLog(org.compiere.process.ProcessInfoLog log) {
+		ProcessInfoLog.Builder processLog = ProcessInfoLog.newBuilder();
 		if (log == null) {
 			return processLog;
 		}

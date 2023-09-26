@@ -45,4 +45,14 @@ public class BearerToken extends CallCredentials {
     public void thisUsesUnstableApi() {
         // noop
     }
+    
+    public static String getTokenWithoutType(String token) {
+		if (token == null || token.trim().length() == 0) {
+			return "";
+		}
+		if (token.startsWith(Constants.BEARER_TYPE)) {
+			return token.substring(Constants.BEARER_TYPE.length()).trim();
+		}
+		return token;
+	}
 }

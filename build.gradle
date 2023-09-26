@@ -53,6 +53,24 @@ protobuf {
         all()*.plugins {
             grpc {}
         }
+        all().configureEach { task ->
+      		  // If true, will generate a descriptor_set.desc file under
+			  // task.outputBaseDir. Default is false.
+			  // See --descriptor_set_out in protoc documentation about what it is.
+			  task.generateDescriptorSet = true
+			
+			  // Allows to override the default for the descriptor set location
+			  task.descriptorSetOptions.path =
+			    "${projectDir}/build/descriptors/adempiere-middleware.pb"
+			
+			  // If true, the descriptor set will contain line number information
+			  // and comments. Default is false.
+			  task.descriptorSetOptions.includeSourceInfo = true
+			
+			  // If true, the descriptor set will contain all transitive imports and
+			  // is therefore self-contained. Default is false.
+			  task.descriptorSetOptions.includeImports = true
+    	}
     }
 }
 sourceSets {
@@ -103,6 +121,9 @@ dependencies {
     implementation "io.grpc:grpc-protobuf:${grpcVersion}"
     implementation "io.grpc:grpc-stub:${grpcVersion}"
     implementation "io.grpc:grpc-netty:${grpcVersion}"
+    // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
+	implementation 'com.google.protobuf:protobuf-java:3.24.3'
+	implementation 'com.google.protobuf:protobuf-java-util:3.24.3'
     implementation 'io.jsonwebtoken:jjwt-api:0.11.2'
     implementation 'io.jsonwebtoken:jjwt-impl:0.11.2'
     implementation 'io.jsonwebtoken:jjwt-jackson:0.11.2'

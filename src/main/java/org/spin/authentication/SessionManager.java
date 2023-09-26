@@ -1,24 +1,26 @@
 /*************************************************************************************
  * Product: Adempiere ERP & CRM Smart Business Solution                              *
- * This program is free software; you can redistribute it and/or modify it    		 *
+ * This program is free software; you can redistribute it and/or modify it           *
  * under the terms version 2 or later of the GNU General Public License as published *
- * by the Free Software Foundation. This program is distributed in the hope   		 *
- * that it will be useful, but WITHOUT ANY WARRANTY; without even the implied 		 *
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.           		 *
- * See the GNU General Public License for more details.                       		 *
- * You should have received a copy of the GNU General Public License along    		 *
- * with this program; if not, write to the Free Software Foundation, Inc.,    		 *
- * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.                     		 *
- * For the text or an alternative of this public license, you may reach us    		 *
- * Copyright (C) 2012-2018 E.R.P. Consultores y Asociados, S.A. All Rights Reserved. *
- * Contributor(s): Yamel Senih www.erpya.com				  		                 *
+ * by the Free Software Foundation. This program is distributed in the hope          *
+ * that it will be useful, but WITHOUT ANY WARRANTY; without even the implied        *
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                  *
+ * See the GNU General Public License for more details.                              *
+ * You should have received a copy of the GNU General Public License along           *
+ * with this program; if not, write to the Free Software Foundation, Inc.,           *
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.                            *
+ * For the text or an alternative of this public license, you may reach us           *
+ * Copyright (C) 2012-2023 E.R.P. Consultores y Asociados, S.A. All Rights Reserved. *
+ * Contributor(s): Yamel Senih www.erpya.com                                         *
  *************************************************************************************/
 package org.spin.authentication;
 
+import java.security.Key;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -28,9 +30,12 @@ import org.compiere.model.MAcctSchema;
 import org.compiere.model.MClient;
 import org.compiere.model.MClientInfo;
 import org.compiere.model.MCountry;
+import org.compiere.model.MOrg;
 import org.compiere.model.MRole;
 import org.compiere.model.MSession;
+import org.compiere.model.MSysConfig;
 import org.compiere.model.MUser;
+import org.compiere.model.MWarehouse;
 import org.compiere.model.ModelValidationEngine;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
@@ -38,12 +43,17 @@ import org.compiere.util.Env;
 import org.compiere.util.Ini;
 import org.compiere.util.TimeUtil;
 import org.compiere.util.Util;
-import org.spin.eca52.security.JWT;
+import org.spin.eca52.util.JWTUtil;
 import org.spin.model.MADToken;
 import org.spin.model.MADTokenDefinition;
 import org.spin.util.IThirdPartyAccessGenerator;
 import org.spin.util.ITokenGenerator;
 import org.spin.util.TokenGeneratorHandler;
+
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 
 /**
  * Class for handle Session for Third Party Access
@@ -51,26 +61,44 @@ import org.spin.util.TokenGeneratorHandler;
  */
 public class SessionManager {
 	
+	/**	Session Context	*/
 	/**	Logger			*/
 	private static CLogger log = CLogger.getCLogger(SessionManager.class);
+	
+	
 	/**
 	 * Load session from token
 	 * @param tokenValue
 	 */
-	public static void createSessionFromToken(String tokenValue) {
-		//	Get Session
-		Properties context = Env.getCtx();
+	public static Properties getSessionFromToken(String tokenValue) {
+		if (tokenValue.startsWith(Constants.BEARER_TYPE)) {
+			tokenValue = BearerToken.getTokenWithoutType(tokenValue);
+		}
 		//	Validate if is token based
 		int userId = -1;
 		int roleId = -1;
 		int organizationId = -1;
 		int warehouseId = -1;
-		MADToken token = getSessionFromToken(tokenValue);
+		String language = "en_US";
+		MADToken token = createSessionFromToken(tokenValue);
 		if(Optional.ofNullable(token).isPresent()) {
 			userId = token.getAD_User_ID();
 			roleId = token.getAD_Role_ID();
 			organizationId = token.getAD_Org_ID();
 		}
+		//	
+		if(organizationId < 0) {
+			organizationId = 0;
+		}
+		if(warehouseId < 0) {
+			warehouseId = 0;
+		}
+		//	Get Values from role
+		if(roleId < 0) {
+			throw new AdempiereException("@AD_User_ID@ / @AD_Role_ID@ / @AD_Org_ID@ @NotFound@");
+		}
+		Properties context = (Properties) Env.getCtx().clone();
+		DB.validateSupportedUUIDFromDB();
 		//	
 		if(organizationId < 0) {
 			organizationId = 0;
@@ -92,16 +120,147 @@ public class SessionManager {
 		Env.setContext(context, "#AD_Role_ID", roleId);
 		//	User Info
 		Env.setContext(context, "#AD_User_ID", userId);
-		if(token.getAD_Token_ID() > 0) {
-			Env.setContext (Env.getCtx(), "#AD_Session_ID", 0);
-		}
 		//	
-		MSession session = MSession.get(context, true);
-		Env.setContext (context, "#AD_Session_ID", session.getAD_Session_ID());
-		//	Load preferences
-		if(token.getAD_Token_ID() > 0) {
-			loadDefaultSessionValues(context, null);
+		MSession session = MSession.get(context, false);
+		if(session == null
+				|| session.getAD_Session_ID() <= 0) {
+			throw new AdempiereException("@AD_Session_ID@ @NotFound@");
 		}
+		//	Load preferences
+		loadDefaultSessionValues(context, language);
+		Env.setContext (context, "#AD_Session_ID", session.getAD_Session_ID());
+		Env.setContext (context, "#Session_UUID", session.getUUID());
+		Env.setContext(context, "#AD_User_ID", session.getCreatedBy());
+		Env.setContext(context, "#AD_Role_ID", session.getAD_Role_ID());
+		Env.setContext(context, "#AD_Client_ID", session.getAD_Client_ID());
+		Env.setContext(context, "#Date", new Timestamp(System.currentTimeMillis()));
+		setDefault(context, Env.getAD_Org_ID(context), organizationId, warehouseId);
+		Env.setContext(context, Env.LANGUAGE, ContextManager.getDefaultLanguage(language));
+		return context;
+	}
+	
+	public static String createSession(String clientVersion, String language, int roleId, int userId, int organizationId, int warehouseId) {
+		Properties context = (Properties) Env.getCtx().clone();
+		MRole role = MRole.get(context, roleId);
+		//	Warehouse / Org
+		Env.setContext (context, "#M_Warehouse_ID", warehouseId);
+		Env.setContext (context, "#AD_Session_ID", 0);
+		//  Client Info
+		MClient client = MClient.get(context, role.getAD_Client_ID());
+		Env.setContext(context, "#AD_Client_ID", client.getAD_Client_ID());
+		Env.setContext(context, "#AD_Org_ID", organizationId);
+		//	Role Info
+		Env.setContext(context, "#AD_Role_ID", roleId);
+		//	User Info
+		Env.setContext(context, "#AD_User_ID", userId);
+		//	
+		Env.setContext(context, "#Date", new Timestamp(System.currentTimeMillis()));
+		MSession session = MSession.get(context, true);
+		if (!Util.isEmpty(clientVersion, true)) {
+			session.setWebSession(clientVersion);
+		}
+		Env.setContext (context, "#AD_Session_ID", session.getAD_Session_ID());
+		Env.setContext (context, "#Session_UUID", session.getUUID());
+		//	Load preferences
+		SessionManager.loadDefaultSessionValues(context, language);
+		//	Session values
+		String bearerToken = createBearerToken(session, warehouseId, Env.getAD_Language(context));
+		return bearerToken;
+	}
+	
+	private static String getSecretKey() {
+		String secretKey = MSysConfig.getValue(JWTUtil.ECA52_JWT_SECRET_KEY, Env.getAD_Client_ID(Env.getCtx()));
+        if(Util.isEmpty(secretKey)) {
+        	throw new AdempiereException("@ECA52_JWT_SECRET_KEY@ @NotFound@");
+        }
+        return secretKey;
+	}
+	
+	/**
+	 * Create token as bearer
+	 * @param session
+	 * @param warehouseId
+	 * @param language
+	 * @return
+	 */
+	private static String createBearerToken(MSession session, int warehouseId, String language) {
+		MUser user = MUser.get(session.getCtx(), session.getCreatedBy());
+		long sessionTimeout = getSessionTimeout(user);
+		if(sessionTimeout == 0) {
+			//	Default 24 hours
+			sessionTimeout = 86400000;
+		}
+		
+		byte[] keyBytes = Decoders.BASE64.decode(getSecretKey());
+        Key key = Keys.hmacShaKeyFor(keyBytes);
+        return Jwts.builder()
+        		.setId(String.valueOf(session.getAD_Session_ID()))
+        		.claim("AD_Client_ID", session.getAD_Client_ID())
+        		.claim("AD_Org_ID", session.getAD_Org_ID())
+        		.claim("AD_Role_ID", session.getAD_Role_ID())
+        		.claim("AD_User_ID", session.getCreatedBy())
+        		.claim("M_Warehouse_ID", warehouseId)
+        		.claim("AD_Language", language)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + sessionTimeout))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+	}
+	
+	/**
+	 * Get Session Timeout from user definition
+	 * @param user
+	 * @return
+	 */
+	public static long getSessionTimeout(MUser user) {
+		long sessionTimeout = 0;
+		Object value = null;
+		// checks if the column exists in the database
+		if (user.get_ColumnIndex("ConnectionTimeout") >= 0) {
+			value = user.get_Value("ConnectionTimeout");
+		}
+		if(value == null) {
+			String sessionTimeoutAsString = MSysConfig.getValue("WEBUI_DEFAULT_TIMEOUT", Env.getAD_Client_ID(Env.getCtx()), 0);
+			try {
+				if (!Util.isEmpty(sessionTimeoutAsString, true)) {
+					sessionTimeout = Long.parseLong(sessionTimeoutAsString);
+				}
+			} catch (Exception e) {
+//				log.severe(e.getLocalizedMessage());
+			}
+		} else {
+			try {
+				sessionTimeout = Long.parseLong(String.valueOf(value));
+			} catch (Exception e) {
+//				log.severe(e.getLocalizedMessage());
+			}
+		}
+		return sessionTimeout;
+	}
+	
+	/**
+	 * Set Default warehouse and organization
+	 * @param context
+	 * @param defaultOrganizationId
+	 * @param newOrganizationId
+	 * @param warehouseId
+	 */
+	private static void setDefault(Properties context, int defaultOrganizationId, int newOrganizationId, int warehouseId) {
+		int organizationId = defaultOrganizationId;
+		if(newOrganizationId >= 0) {
+			MOrg organization = MOrg.get(context, newOrganizationId);
+			//	
+			if(organization != null) {
+				organizationId = organization.getAD_Org_ID();
+			}
+		}
+		if (warehouseId >= 0) {
+			MWarehouse warehouse = MWarehouse.get(context, warehouseId);
+			if (warehouse != null) {
+				Env.setContext(context, "#M_Warehouse_ID", warehouseId);
+			}
+		}
+		Env.setContext(context, "#AD_Org_ID", organizationId);
 	}
 	
 	/**
@@ -113,42 +272,43 @@ public class SessionManager {
 	}
 	
 	/**
+	 * Get uuid of current session
+	 * @return
+	 */
+	public static String getSessionUuid() {
+		return Env.getContext(Env.getCtx(), "#Session_UUID");
+	}
+	
+	/**
 	 * Get token object: validate it
 	 * @param tokenValue
 	 * @return
 	 */
-	public static MADToken getSessionFromToken(String tokenValue) {
+	public static MADToken createSessionFromToken(String tokenValue) {
 		if(Util.isEmpty(tokenValue)) {
 			throw new AdempiereException("@AD_Token_ID@ @NotFound@");
 		}
+		if (tokenValue.startsWith(Constants.BEARER_TYPE)) {
+			tokenValue = BearerToken.getTokenWithoutType(tokenValue);
+		}
 		//	
 		try {
-			String [] values = tokenValue.split("[.]");
-			//	Is a JWT
-			if(values != null && values.length == 3) {
-				JWT generator = new JWT();
-				generator.validateToken(tokenValue);
-				Env.setContext(Env.getCtx(), Env.LANGUAGE, ContextManager.getDefaultLanguage(generator.getLanguage()));
-				Env.setContext(Env.getCtx(), "#AD_Session_ID", generator.getSessionId());
-				return generator.getToken();
-			} else {
-				ITokenGenerator generator = TokenGeneratorHandler.getInstance().getTokenGenerator(MADTokenDefinition.TOKENTYPE_ThirdPartyAccess);
-				if(generator == null) {
-					throw new AdempiereException("@AD_TokenDefinition_ID@ @NotFound@");
-				}
-				//	No child of definition
-				if(!IThirdPartyAccessGenerator.class.isAssignableFrom(generator.getClass())) {
-					throw new AdempiereException("@AD_TokenDefinition_ID@ @Invalid@");	
-				}
-				//	Validate
-				IThirdPartyAccessGenerator thirdPartyAccessGenerator = ((IThirdPartyAccessGenerator) generator);
-				if(!thirdPartyAccessGenerator.validateToken(tokenValue)) {
-					throw new AdempiereException("@Invalid@ @AD_Token_ID@");
-				}
-				//	Default
-				MADToken token = thirdPartyAccessGenerator.getToken();
-				return token;
+			ITokenGenerator generator = TokenGeneratorHandler.getInstance().getTokenGenerator(MADTokenDefinition.TOKENTYPE_ThirdPartyAccess);
+			if(generator == null) {
+				throw new AdempiereException("@AD_TokenDefinition_ID@ @NotFound@");
 			}
+			//	No child of definition
+			if(!IThirdPartyAccessGenerator.class.isAssignableFrom(generator.getClass())) {
+				throw new AdempiereException("@AD_TokenDefinition_ID@ @Invalid@");	
+			}
+			//	Validate
+			IThirdPartyAccessGenerator thirdPartyAccessGenerator = ((IThirdPartyAccessGenerator) generator);
+			if(!thirdPartyAccessGenerator.validateToken(tokenValue)) {
+				throw new AdempiereException("@Invalid@ @AD_Token_ID@");
+			}
+			//	Default
+			MADToken token = thirdPartyAccessGenerator.getToken();
+			return token;
 		} catch (Exception e) {
 			throw new AdempiereException(e);
 		}
@@ -168,12 +328,47 @@ public class SessionManager {
 		//	Role Info
 		MRole role = MRole.get(context, Env.getContextAsInt(context, "#AD_Role_ID"));
 		Env.setContext(context, "#AD_Role_Name", role.getName());
+		Env.setContext(context, "#SysAdmin", role.getAD_Role_ID() == 0);
+
 		//	User Info
 		MUser user = MUser.get(context, Env.getContextAsInt(context, "#AD_User_ID"));
 		Env.setContext(context, "#AD_User_Name", user.getName());
 		Env.setContext(context, "#AD_User_Description", user.getDescription());
+		Env.setContext(context, "#SalesRep_ID", user.getAD_User_ID());
+
 		//	Load preferences
 		loadPreferences(context);
+	}
+	
+	/**
+	 * Get Default Warehouse after login
+	 * @param organizationId
+	 * @return
+	 */
+	public static int getDefaultWarehouseId(int organizationId) {
+		if (organizationId < 0) {
+			return -1;
+		}
+		String sql = "SELECT M_Warehouse_ID FROM M_Warehouse WHERE IsActive = 'Y' AND AD_Org_ID = ? AND IsInTransit='N'";
+		return DB.getSQLValue(null, sql, organizationId);
+	}
+
+	/**
+	 * Get Default role after login
+	 * @param userId
+	 * @return
+	 */
+	public static int getDefaultRoleId(int userId) {
+		String sql = "SELECT ur.AD_Role_ID "
+				+ "FROM AD_User_Roles ur "
+				+ "INNER JOIN AD_Role AS r ON ur.AD_Role_ID = r.AD_Role_ID "
+				+ "WHERE ur.AD_User_ID = ? AND ur.IsActive = 'Y' "
+				+ "AND r.IsActive = 'Y' "
+				+ "AND ((r.IsAccessAllOrgs = 'Y' AND EXISTS(SELECT 1 FROM AD_Org AS o WHERE (o.AD_Client_ID = r.AD_Client_ID OR o.AD_Org_ID = 0) AND o.IsActive = 'Y' AND o.IsSummary = 'N') ) "
+				+ "OR (r.IsUseUserOrgAccess = 'N' AND EXISTS(SELECT 1 FROM AD_Role_OrgAccess AS ro WHERE ro.AD_Role_ID = ur.AD_Role_ID AND ro.IsActive = 'Y') ) "
+				+ "OR (r.IsUseUserOrgAccess = 'Y' AND EXISTS(SELECT 1 FROM AD_User_OrgAccess AS uo WHERE uo.AD_User_ID = ur.AD_User_ID AND uo.IsActive = 'Y') )) "
+				+ "ORDER BY COALESCE(ur.IsDefault,'N') DESC";
+		return DB.getSQLValue(null, sql, userId);
 	}
 	
 	/**
@@ -196,7 +391,7 @@ public class SessionManager {
 				+ "ORDER BY o.AD_Org_ID DESC, o.Name";
 		return DB.getSQLValue(null, organizationSQL, roleId, userId);
 	}
-	
+
 	/**
 	 *	Load Preferences into Context for selected client.
 	 *  <p>
@@ -224,11 +419,13 @@ public class SessionManager {
 		//	Other
 		Env.setAutoCommit(context, Ini.isPropertyBool(Ini.P_A_COMMIT));
 		Env.setAutoNew(context, Ini.isPropertyBool(Ini.P_A_NEW));
+
+		String isShowAccounting = "N";
 		if (MRole.getDefault(context, false).isShowAcct()) {
-			Env.setContext(context, "#ShowAcct", Ini.getProperty(Ini.P_SHOW_ACCT));
-		} else {
-			Env.setContext(context, "#ShowAcct", "N");
+			isShowAccounting = "Y";
 		}
+		Env.setContext(context, "#ShowAcct", isShowAccounting);
+
 		Env.setContext(context, "#ShowTrl", Ini.getProperty(Ini.P_SHOW_TRL));
 		Env.setContext(context, "#ShowAdvanced", Ini.getProperty(Ini.P_SHOW_ADVANCED));
 

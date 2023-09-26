@@ -15,18 +15,18 @@
  *************************************************************************************/
 package org.spin.grpc.service;
 
+import static com.google.protobuf.util.Timestamps.fromMillis;
+
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.adempiere.core.domains.models.I_C_Order;
 import org.adempiere.exceptions.AdempiereException;
@@ -41,30 +41,36 @@ import org.compiere.util.Msg;
 import org.compiere.util.NamePair;
 import org.compiere.util.TimeUtil;
 import org.compiere.util.Util;
-import org.spin.proto.service.Decimal;
-import org.spin.proto.service.KeyValue;
-import org.spin.proto.service.Value;
-import org.spin.proto.service.ValueType;
+
+import com.google.protobuf.Struct;
+import com.google.protobuf.Value;
 
 /**
  * Class for handle Values from and to client
  * @author Yamel Senih, ysenih@erpya.com , http://www.erpya.com
  */
 public class ValueManager {
-	
+
 	/**	Date format	*/
 	private static final String TIME_FORMAT = "yyyy-MM-dd hh:mm:ss";
 	private static final String DATE_FORMAT = "yyyy-MM-dd";
+	private static final String TYPE_KEY = "type";
+	private static final String VALUE_KEY = "value";
+	//	Types
+	public static final String TYPE_DATE = "date";
+	public static final String TYPE_DATE_TIME = "date_time";
+	public static final String TYPE_DECIMAL = "decimal";
 	
+
 	/**
 	 * Get Value 
 	 * @param value
 	 * @return
 	 */
 	public static Value.Builder getValueFromObject(Object value) {
-		Value.Builder builderValue = Value.newBuilder();
+		Value.Builder builder = Value.newBuilder();
 		if(value == null) {
-			return builderValue;
+			return builder;
 		}
 		//	Validate value
 		if(value instanceof BigDecimal) {
@@ -79,7 +85,7 @@ public class ValueManager {
 			return getValueFromDate((Timestamp) value);
 		}
 		//	
-		return builderValue;
+		return builder;
 	}
 	
 	/**
@@ -88,12 +94,11 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Value.Builder getValueFromInteger(Integer value) {
-		Value.Builder convertedValue = Value.newBuilder().setValueType(ValueType.INTEGER);
-		if(value != null) {
-			convertedValue.setIntegerValue((Integer)value);
+		if(value == null) {
+			return Value.newBuilder();
 		}
 		//	default
-		return convertedValue;
+		return Value.newBuilder().setNumberValue((Integer)value);
 	}
 	/**
 	 * Get value from Int
@@ -101,10 +106,7 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Value.Builder getValueFromInt(int value) {
-		Value.Builder convertedValue = Value.newBuilder().setValueType(ValueType.INTEGER);
-		convertedValue.setIntegerValue(Integer.valueOf(value));
-		// default
-		return convertedValue;
+		return getValueFromInteger(value);
 	}
 	
 	/**
@@ -113,7 +115,7 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Value.Builder getValueFromString(String value) {
-		return Value.newBuilder().setStringValue(validateNull(value)).setValueType(ValueType.STRING);
+		return Value.newBuilder().setStringValue(validateNull(value));
 	}
 
 	/**
@@ -122,7 +124,7 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Value.Builder getValueFromBoolean(boolean value) {
-		return Value.newBuilder().setBooleanValue(value).setValueType(ValueType.BOOLEAN);
+		return Value.newBuilder().setBoolValue(value);
 	}
 	/**
 	 * Get value from a Boolean value
@@ -130,17 +132,18 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Value.Builder getValueFromBoolean(Boolean value) {
-		return Value.newBuilder().setBooleanValue(value.booleanValue()).setValueType(ValueType.BOOLEAN);
+		if(value == null) {
+			return Value.newBuilder();
+		}
+		return Value.newBuilder().setBoolValue(value);
 	}
 	/**
 	 * Get value from a String Boolean value
 	 * @param value
 	 * @return
 	 */
-	public static Value.Builder getValueFromBoolean(String value) {
-		return Value.newBuilder()
-			.setBooleanValue(stringToBoolean(value))
-			.setValueType(ValueType.BOOLEAN);
+	public static Value.Builder getValueFromStringBoolean(String value) {
+		return getValueFromBoolean(stringToBoolean(value));
 	}
 
 	/**
@@ -150,14 +153,21 @@ public class ValueManager {
 	 */
 	public static Value.Builder getValueFromDate(Timestamp value) {
 		if (value == null) {
-			return Value.newBuilder().setValueType(ValueType.DATE);
+			return Value.newBuilder();
 		}
-		return Value.newBuilder()
-			.setDateValue(
-				getStringFromDate(value)
-			)
-			.setValueType(ValueType.DATE);
+		Struct.Builder date = Struct.newBuilder();
+		date.putFields(TYPE_KEY, Value.newBuilder().setStringValue(TYPE_DATE).build());
+		date.putFields(VALUE_KEY, Value.newBuilder().setStringValue(convertDateToString(value)).build());
+		return Value.newBuilder().setStructValue(date);
 	}
+	
+	public static com.google.protobuf.Timestamp getTimestampFromDate(Timestamp value) {
+		if (value == null) {
+			return null;
+		}
+		return fromMillis(value.getTime());
+	}
+	
 	
 	/**
 	 * Get value from big decimal
@@ -165,11 +175,7 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Value.Builder getValueFromDecimal(BigDecimal value) {
-		return Value.newBuilder()
-			.setValueType(ValueType.DECIMAL)
-			.setDecimalValue(
-				getDecimalFromBigDecimal(value)
-			);
+		return getDecimalFromBigDecimal(value);
 	}
 	
 	/**
@@ -177,32 +183,18 @@ public class ValueManager {
 	 * @param value
 	 * @return
 	 */
-	public static Decimal.Builder getDecimalFromBigDecimal(BigDecimal value) {
+	public static Value.Builder getDecimalFromBigDecimal(BigDecimal value) {
 		if (value == null) {
-			return Decimal.newBuilder();
+			return Value.newBuilder();
 		}
-		return Decimal.newBuilder()
-			.setDecimalValue(value.toPlainString())
-			.setScale(value.scale());
+		Struct.Builder decimalValue = Struct.newBuilder();
+		decimalValue.putFields(TYPE_KEY, Value.newBuilder().setStringValue(TYPE_DECIMAL).build());
+		decimalValue.putFields(VALUE_KEY, Value.newBuilder().setStringValue(value.toPlainString()).build());
+		return Value.newBuilder().setStructValue(decimalValue);
 	}
 	
-	/**
-	 * Get Decimal from Value
-	 * @param value
-	 * @return
-	 */
-	public static BigDecimal getDecimalFromValue(Value value) {
-		if (Util.isEmpty(value.getDecimalValue().getDecimalValue(), true)) {
-			if (value.getValueType() == ValueType.INTEGER) {
-				return BigDecimal.valueOf(value.getIntegerValue());
-			}
-			if (value.getValueType() == ValueType.STRING) {
-				return getBigDecimalFromString(value.getStringValue());
-			}
-			return null;
-		}
-		// Value.Decimal.DecimalValue
-		return getBigDecimalFromDecimal(value.getDecimalValue());
+	public static BigDecimal getBigDecimalFromDecimal(Value decimalValue) {
+		return getDecimalFromValue(decimalValue);
 	}
 	
 	/**
@@ -210,12 +202,42 @@ public class ValueManager {
 	 * @param decimalValue
 	 * @return
 	 */
-	public static BigDecimal getBigDecimalFromDecimal(Decimal decimalValue) {
-		if (decimalValue == null || Util.isEmpty(decimalValue.getDecimalValue(), true)) {
+	public static BigDecimal getDecimalFromValue(Value decimalValue) {
+		if(decimalValue == null
+				|| decimalValue.hasNullValue()
+				|| !decimalValue.hasStringValue()) {
 			return null;
 		}
-		return new BigDecimal(decimalValue.getDecimalValue())
-			.setScale(decimalValue.getScale(), RoundingMode.HALF_UP);
+		Map<String, Value> values = decimalValue.getStructValue().getFieldsMap();
+		if(values == null) {
+			return null;
+		}
+		Value type = values.get(TYPE_KEY);
+		Value value = values.get(VALUE_KEY);
+		if(type == null
+				|| value == null) {
+			return null;
+		}
+		String validType = Optional.ofNullable(type.getStringValue()).orElse("");
+		String validValue = Optional.ofNullable(value.getStringValue()).orElse("");
+		if(!validType.equals(TYPE_DECIMAL)
+				|| validValue.length() == 0) {
+			return null;
+		}
+		return new BigDecimal(validValue);
+	}
+	
+	/**
+	 * Get Date from value
+	 * @param dateValue
+	 * @return
+	 */
+	public static Timestamp getDateFromTimestampDate(com.google.protobuf.Timestamp dateValue) {
+		if(dateValue == null) {
+			return null;
+		}
+		Instant epochDate = Instant.ofEpochSecond(dateValue.getSeconds(), dateValue.getNanos());
+		return new Timestamp(Date.from(epochDate).getTime());
 	}
 	
 	/**
@@ -223,11 +245,30 @@ public class ValueManager {
 	 * @param value
 	 * @return
 	 */
-	public static Timestamp getDateFromValue(Value value) {
-		if(!Util.isEmpty(value.getDateValue())) {
-			return getDateFromString(value.getDateValue());
+	public static Timestamp getDateFromValue(Value dateValue) {
+		if(dateValue == null
+				|| dateValue.hasNullValue()
+				|| !dateValue.hasStringValue()) {
+			return null;
 		}
-		return null;
+		Map<String, Value> values = dateValue.getStructValue().getFieldsMap();
+		if(values == null) {
+			return null;
+		}
+		Value type = values.get(TYPE_KEY);
+		Value value = values.get(VALUE_KEY);
+		if(type == null
+				|| value == null) {
+			return null;
+		}
+		String validType = Optional.ofNullable(type.getStringValue()).orElse("");
+		String validValue = Optional.ofNullable(value.getStringValue()).orElse("");
+		if((!validType.equals(TYPE_DATE)
+				&& !validType.equals(TYPE_DATE_TIME))
+				|| validValue.length() == 0) {
+			return null;
+		}
+		return convertStringToDate(validValue);
 	}
 	
 	/**
@@ -263,7 +304,7 @@ public class ValueManager {
 	 * @return
 	 */
 	public static int getIntegerFromValue(Value value) {
-		return value.getIntegerValue();
+		return (int) value.getNumberValue();
 	}
 	
 	/**
@@ -278,7 +319,7 @@ public class ValueManager {
 				|| "true".equals(value.getStringValue());
 		}
 
-		return value.getBooleanValue();
+		return value.getBoolValue();
 	}
 	
 	/**
@@ -297,18 +338,39 @@ public class ValueManager {
 				|| DisplayType.isID(referenceId)) {
 			return getValueFromObject(value);
 		} else if(DisplayType.Integer == referenceId) {
+			Integer integerValue = null;
 			if(value instanceof Integer) {
-				return getValueFromInteger((Integer) value);
+				integerValue = (Integer) value;
+			} else if (value instanceof Long) {
+				long longValue = (long) value;
+				integerValue = Math.toIntExact(longValue);
 			} else if(value instanceof BigDecimal) {
-				return getValueFromInteger(((BigDecimal) value).intValue());
-			} else {
-				return getValueFromInteger(null);
+				integerValue = ((BigDecimal) value).intValue();
+			} else if (value instanceof String) {
+				try {
+					integerValue = Integer.valueOf((String) value);
+				} catch (Exception e) {
+					integerValue = null;
+				}
 			}
+			return getValueFromInteger(integerValue);
 		} else if(DisplayType.isNumeric(referenceId)) {
-			return getValueFromDecimal((BigDecimal) value);
+			BigDecimal bigDecimalValue = null;
+			if (value instanceof Integer) {
+				Integer intValue = (Integer) value;
+				bigDecimalValue = BigDecimal.valueOf(intValue);
+			} else if (value instanceof Long) {
+				long longValue = (long) value;
+				bigDecimalValue = BigDecimal.valueOf(longValue);
+			} else if (value instanceof String) {
+				bigDecimalValue = new BigDecimal((String) value);
+			} else {
+				bigDecimalValue = (BigDecimal) value;
+			}
+			return getValueFromDecimal(bigDecimalValue);
 		} else if(DisplayType.YesNo == referenceId) {
 			if (value instanceof String) {
-				return getValueFromBoolean((String) value);
+				return getValueFromStringBoolean((String) value);
 			}
 			return getValueFromBoolean((Boolean) value);
 		} else if(DisplayType.isDate(referenceId)) {
@@ -318,6 +380,10 @@ public class ValueManager {
 		} else if (DisplayType.Button == referenceId) {
 			if (value instanceof Integer) {
 				return getValueFromInteger((Integer) value);
+			} else if (value instanceof Long) {
+				long longValue = (long) value;
+				Integer integerValue = Math.toIntExact(longValue);
+				return getValueFromInt(integerValue);
 			} else if(value instanceof BigDecimal) {
 				return getValueFromInteger(((BigDecimal) value).intValue());
 			} else if (value instanceof String) {
@@ -385,23 +451,40 @@ public class ValueManager {
 		}
 		return displayedValue;
 	}
-
-
+	
 	/**
 	 * Convert Selection values from gRPC to ADempiere values
 	 * @param values
 	 * @return
 	 */
-	public static Map<String, Object> convertValuesToObjects(List<KeyValue> values) {
+	public static Map<String, Object> convertValuesMapToObjects(Map<String, Value> values) {
 		Map<String, Object> convertedValues = new HashMap<>();
 		if (values == null || values.size() <= 0) {
 			return convertedValues;
 		}
-		for(KeyValue value : values) {
-			convertedValues.put(value.getKey(), getObjectFromValue(value.getValue()));
-		}
+		values.keySet().forEach(keyValue -> {
+			convertedValues.put(keyValue, getObjectFromValue(values.get(keyValue)));
+		});
 		//	
 		return convertedValues;
+	}
+	
+	/**
+	 * Convert Selection values from gRPC to ADempiere values
+	 * @param values
+	 * @return
+	 */
+	public static Value.Builder convertObjectMapToStruct(Map<String, Object> values) {
+		Value.Builder convertedValues = Value.newBuilder();
+		if (values == null || values.size() <= 0) {
+			return convertedValues;
+		}
+		Struct.Builder mapValue = Struct.newBuilder();
+		values.keySet().forEach(keyValue -> {
+			mapValue.putFields(keyValue, getValueFromObject(values.get(keyValue)).build());
+		});
+		//	
+		return convertedValues.setStructValue(mapValue);
 	}
 	
 	/**
@@ -419,18 +502,63 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Object getObjectFromValue(Value value, boolean uppercase) {
-		if(value.getValueType().equals(ValueType.BOOLEAN)) {
-			return value.getBooleanValue();
-		} else if(value.getValueType().equals(ValueType.DECIMAL)) {
-			return getDecimalFromValue(value);
-		} else if(value.getValueType().equals(ValueType.INTEGER)) {
-			return value.getIntegerValue();
-		} else if(value.getValueType().equals(ValueType.STRING)) {
+		if(value == null
+				|| value.hasNullValue()) {
+			return null;
+		}
+		if(value.hasStringValue()) {
 			return getStringFromValue(value, uppercase);
-		} else if(value.getValueType().equals(ValueType.DATE)) {
-			return getDateFromValue(value);
+		}
+		if(value.hasNumberValue()) {
+			return (int) value.getNumberValue();
+		}
+		if(value.hasBoolValue()) {
+			return value.getBoolValue();
+		}
+		if(value.hasStructValue()) {
+			if(isDecimalValue(value)) {
+				return getDecimalFromValue(value);
+			} else if(isDateValue(value)) {
+				return getDateFromValue(value);
+			}
 		}
 		return null;
+	}
+	
+	/**
+	 * Validate if a value is date
+	 * @param value
+	 * @return
+	 */
+	public static boolean isDateValue(Value value) {
+		Map<String, Value> values = value.getStructValue().getFieldsMap();
+		if(values == null) {
+			return false;
+		}
+		Value type = values.get(TYPE_KEY);
+		if(type == null) {
+			return false;
+		}
+		String validType = Optional.ofNullable(type.getStringValue()).orElse("");
+		return validType.equals(TYPE_DATE) || validType.equals(TYPE_DATE_TIME);
+	}
+	
+	/**
+	 * Validate if is a decimal value
+	 * @param value
+	 * @return
+	 */
+	public static boolean isDecimalValue(Value value) {
+		Map<String, Value> values = value.getStructValue().getFieldsMap();
+		if(values == null) {
+			return false;
+		}
+		Value type = values.get(TYPE_KEY);
+		if(type == null) {
+			return false;
+		}
+		String validType = Optional.ofNullable(type.getStringValue()).orElse("");
+		return validType.equals(TYPE_DECIMAL);
 	}
 	
 	/**
@@ -440,8 +568,7 @@ public class ValueManager {
 	 * @return
 	 */
 	public static Object getObjectFromReference(Value value, int referenceId) {
-		if(value == null
-				|| value.getValueType().equals(ValueType.UNKNOWN)) {
+		if(value == null) {
 			return null;
 		}
 		//	Validate values
@@ -634,51 +761,8 @@ public class ValueManager {
 		}
 		return value.getTime();
 	}
-	
-	/**
-	 * Set Parameter for Statement from object
-	 * @param pstmt
-	 * @param value
-	 * @param index
-	 * @throws SQLException
-	 */
-	public static void setParameterFromObject(PreparedStatement pstmt, Object value, int index) throws SQLException {
-		if(value instanceof Integer) {
-			pstmt.setInt(index, (Integer) value);
-		} else if(value instanceof Double) {
-			pstmt.setDouble(index, (Double) value);
-		} else if(value instanceof Long) {
-			pstmt.setLong(index, (Long) value);
-		} else if(value instanceof BigDecimal) {
-			pstmt.setBigDecimal(index, (BigDecimal) value);
-		} else if(value instanceof String) {
-			pstmt.setString(index, (String) value);
-		} else if(value instanceof Timestamp) {
-			pstmt.setTimestamp(index, (Timestamp) value);
-		} else if(value instanceof Boolean) {
-			pstmt.setString(index, ((Boolean) value)? "Y": "N");
-		}
-	}
-	
-	/**
-	 * Set Parameter for Statement from value
-	 * @param pstmt
-	 * @param value
-	 * @param index
-	 * @throws SQLException
-	 */
-	public static void setParameterFromValue(PreparedStatement pstmt, Value value, int index) throws SQLException {
-		if(value.getValueType().equals(ValueType.INTEGER)) {
-			pstmt.setInt(index, ValueManager.getIntegerFromValue(value));
-		} else if(value.getValueType().equals(ValueType.DECIMAL)) {
-			pstmt.setBigDecimal(index, ValueManager.getDecimalFromValue(value));
-		} else if(value.getValueType().equals(ValueType.STRING)) {
-			pstmt.setString(index, ValueManager.getStringFromValue(value));
-		} else if(value.getValueType().equals(ValueType.DATE)) {
-			pstmt.setTimestamp(index, ValueManager.getDateFromValue(value));
-		}
-	}
-	
+
+
 	/**
 	 * Convert string to dates
 	 * @param date
@@ -701,18 +785,6 @@ public class ValueManager {
 		} catch (Exception e) {
 			throw new AdempiereException(e);
 		}
-	}
-	
-	/**
-	 * VGet string from date
-	 * @param date
-	 * @return
-	 */
-	public static String getStringFromDate(Timestamp date) {
-		if(date == null) {
-			return "";
-		}
-		return new SimpleDateFormat(TIME_FORMAT).format(date);
 	}
 	
 	/**
@@ -753,5 +825,4 @@ public class ValueManager {
 		}
 		return convertedValue;
 	}
-
 }

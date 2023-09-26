@@ -24,15 +24,15 @@ import java.util.stream.IntStream;
 
 import org.compiere.util.CLogger;
 import org.spin.authentication.BearerToken;
+import org.spin.grpc.service.ValueManager;
 import org.spin.proto.service.Entity;
-import org.spin.proto.service.KeyValue;
-import org.spin.proto.service.Value;
-import org.spin.proto.service.ValueType;
 import org.spin.proto.service.CreateEntityRequest;
 import org.spin.proto.service.DeleteEntityRequest;
 import org.spin.proto.service.MiddlewareServiceGrpc;
 import org.spin.proto.service.MiddlewareServiceGrpc.MiddlewareServiceBlockingStub;
 import org.spin.server.setup.SetupLoader;
+
+import com.google.protobuf.Struct;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -88,40 +88,20 @@ public class MiddlewareClient {
         	log.warning("Started at: " + format.format(new Date(start)));
         	IntStream.range(0, 100).forEach(index -> {
         		String uuid = UUID.randomUUID().toString();
+        		Struct.Builder attributes = Struct.newBuilder();
+        		attributes
+        			.putFields("Value", ValueManager.getValueFromObject(uuid).build())
+        			.putFields("Name", ValueManager.getValueFromObject("Test for gRPC " + index).build())
+        			.putFields("Description", ValueManager.getValueFromObject("This is a test based on gRPC " + index).build())
+        			.putFields("IsDefault", ValueManager.getValueFromObject(false).build())
+        			.putFields("Value", ValueManager.getValueFromObject(uuid).build())
+        			.putFields("Value", ValueManager.getValueFromObject(uuid).build())
+        			;
         		Entity entity = client.createEntity(CreateEntityRequest.newBuilder()
             			.setTableName("M_Product_Class")
-            			//	Value
-            			.addAttributes(KeyValue.newBuilder()
-            					.setKey("Value")
-            					.setValue(Value.newBuilder()
-            							.setStringValue(uuid)
-            							.setValueType(ValueType.STRING)
-            							.build())
-            					.build())
-            			//	Name
-            			.addAttributes(KeyValue.newBuilder()
-            					.setKey("Name")
-            					.setValue(Value.newBuilder()
-            							.setStringValue("Test for gRPC " + index)
-            							.setValueType(ValueType.STRING)
-            							.build())
-            					.build())
-            			//	Description
-            			.addAttributes(KeyValue.newBuilder()
-            					.setKey("Description")
-            					.setValue(Value.newBuilder()
-            							.setStringValue("This is a test based on gRPC " + index)
-            							.setValueType(ValueType.STRING)
-            							.build())
-            					.build())
-            			.addAttributes(KeyValue.newBuilder()
-            					.setKey("IsDefault")
-            					.setValue(Value.newBuilder()
-            							.setBooleanValue(false)
-            							.setValueType(ValueType.BOOLEAN)
-            							.build())
-            					.build())
-            			.build());
+            			.setAttributes(attributes)
+            			.build()
+        		);
         		ids.add(entity.getId());
                 System.out.println("Entity Created " + entity.getId());
         	});

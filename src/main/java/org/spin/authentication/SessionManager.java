@@ -121,7 +121,7 @@ public class SessionManager {
 		//	User Info
 		Env.setContext(context, "#AD_User_ID", userId);
 		//	
-		MSession session = MSession.get(context, false);
+		MSession session = MSession.get(context, true);
 		if(session == null
 				|| session.getAD_Session_ID() <= 0) {
 			throw new AdempiereException("@AD_Session_ID@ @NotFound@");

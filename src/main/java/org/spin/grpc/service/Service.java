@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.adempiere.core.domains.models.I_AD_PInstance;
@@ -325,13 +324,16 @@ public class Service {
 		}
 
 		int tableId = 0;
+		PO entity = null;
 		if(!Util.isEmpty(request.getTableName())) {
 			MTable table = MTable.get(Env.getCtx(), request.getTableName());
 			if(table != null && table.getAD_Table_ID() > 0) {
 				tableId = table.getAD_Table_ID();
 			}
+			if(request.getRecordId() > 0) {
+				entity = getEntity(request.getTableName(), request.getRecordId(), null);
+			}
 		}
-		PO entity = getEntity(request.getTableName(), request.getRecordId(), null);
 		Map<String, Value> parameters = new HashMap<String, Value>();
 		parameters.putAll(request.getParameters().getFieldsMap());
 		//	Call process builder
@@ -388,7 +390,7 @@ public class Service {
 			&& entity != null && DocAction.class.isAssignableFrom(entity.getClass())) {
 			return WorkflowUtil.startWorkflow(
 				request.getTableName(),
-				entity.get_ID(),
+				request.getRecordId(),
 				documentAction
 			);
 		}

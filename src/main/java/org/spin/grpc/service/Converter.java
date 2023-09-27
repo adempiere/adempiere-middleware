@@ -45,6 +45,7 @@ public class Converter {
 		//	Convert attributes
 		POInfo poInfo = POInfo.getPOInfo(Env.getCtx(), entity.get_Table_ID());
 		builder.setTableName(ValueManager.validateNull(poInfo.getTableName()));
+		Struct.Builder values = Struct.newBuilder();
 		for(int index = 0; index < poInfo.getColumnCount(); index++) {
 			String columnName = poInfo.getColumnName(index);
 			int referenceId = poInfo.getColumnDisplayType(index);
@@ -53,9 +54,9 @@ public class Converter {
 			if(builderValue == null) {
 				continue;
 			}
-			//	Add
-			builder.setValues(Struct.newBuilder().putFields(columnName, builderValue.build()));
+			values.putFields(columnName, builderValue.build());
 		}
+		builder.setValues(values);
 		//	
 		return builder;
 	}

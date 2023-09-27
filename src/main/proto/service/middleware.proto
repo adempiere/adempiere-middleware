@@ -155,7 +155,7 @@ service MiddlewareService {
 	// Create Entity Request
 	rpc CreateEntity(CreateEntityRequest) returns (Entity) {
 		option (google.api.http) = {
-			post: "/v1/entities",
+			post: "/v1/entities/{table_name}",
 			body: "*"
 		};
 	}
@@ -181,7 +181,7 @@ service MiddlewareService {
 	//	Request a BusinessProcess / Report
 	rpc RunBusinessProcess(RunBusinessProcessRequest) returns (RunBusinessProcessResponse) {
 		option (google.api.http) = {
-			post: "/v1/process",
+			post: "/v1/process/{process_code}",
 			body: "*"
 		};
 	}

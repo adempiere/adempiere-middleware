@@ -32,8 +32,8 @@ import org.compiere.util.Env;
 import org.compiere.util.Util;
 import org.compiere.wf.MWorkflow;
 import org.spin.grpc.service.Service;
-import org.spin.grpc.service.ValueManager;
 import org.spin.proto.service.RunBusinessProcessResponse;
+import org.spin.service.grpc.util.ValueManager;
 
 /**
  * @author Edwin Betancourt, EdwinBetanc0urt@outlook.com, https://github.com/EdwinBetanc0urt

@@ -23,14 +23,14 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import org.compiere.util.CLogger;
-import org.spin.authentication.TokenManager;
-import org.spin.grpc.service.ValueManager;
 import org.spin.proto.service.Entity;
 import org.spin.proto.service.CreateEntityRequest;
 import org.spin.proto.service.DeleteEntityRequest;
 import org.spin.proto.service.MiddlewareServiceGrpc;
 import org.spin.proto.service.MiddlewareServiceGrpc.MiddlewareServiceBlockingStub;
 import org.spin.server.setup.SetupLoader;
+import org.spin.service.grpc.authentication.TokenManager;
+import org.spin.service.grpc.util.ValueManager;
 
 import com.google.protobuf.Struct;
 

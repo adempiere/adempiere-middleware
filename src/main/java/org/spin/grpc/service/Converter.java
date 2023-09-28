@@ -21,6 +21,7 @@ import org.compiere.util.Env;
 import org.compiere.util.Msg;
 import org.spin.proto.service.Entity;
 import org.spin.proto.service.ProcessInfoLog;
+import org.spin.service.grpc.util.ValueManager;
 
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;

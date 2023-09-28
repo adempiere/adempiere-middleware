@@ -19,9 +19,10 @@ import java.io.IOException;
 import java.util.logging.Logger;
 
 import org.compiere.util.Env;
-import org.spin.authentication.AuthorizationServerInterceptor;
 import org.spin.grpc.controller.Middleware;
 import org.spin.server.setup.SetupLoader;
+import org.spin.service.grpc.authentication.AuthorizationServerInterceptor;
+import org.spin.service.grpc.context.ServiceContextProvider;
 
 import io.grpc.Server;
 import io.grpc.netty.GrpcSslContexts;

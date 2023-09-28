@@ -63,6 +63,7 @@ import org.spin.proto.service.ReportOutput;
 import org.spin.proto.service.RunBusinessProcessRequest;
 import org.spin.proto.service.RunBusinessProcessResponse;
 import org.spin.proto.service.UpdateEntityRequest;
+import org.spin.service.grpc.util.ValueManager;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;

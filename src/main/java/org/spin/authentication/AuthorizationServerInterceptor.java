@@ -34,11 +34,7 @@ public class AuthorizationServerInterceptor implements ServerInterceptor {
 	private static List<String> ALLOW_REQUESTS_WITHOUT_TOKEN = Arrays.asList(
 		""
 	);
-
-	/**	Revoke session	*/
-//	private static List<String> REVOKE_TOKEN_SERVICES = Arrays.asList(
-//		""
-//	);
+	
 	@Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall, Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
 		String callingMethod = serverCall.getMethodDescriptor().getFullMethodName();
@@ -48,17 +44,14 @@ public class AuthorizationServerInterceptor implements ServerInterceptor {
 		}
 
 		Status status;
-		String validToken = metadata.get(Constants.AUTHORIZATION_METADATA_KEY);
+		String validToken = metadata.get(TokenManager.AUTHORIZATION_METADATA_KEY);
 		if (validToken == null || validToken.trim().length() <= 0) {
             status = Status.UNAUTHENTICATED.withDescription("Authorization token is missing");
-        } else if (!validToken.startsWith(Constants.BEARER_TYPE)) {
+        } else if (!validToken.startsWith(TokenManager.BEARER_TYPE)) {
             status = Status.UNAUTHENTICATED.withDescription("Unknown authorization type");
         } else {
             try {
             	Properties sessioncontext = SessionManager.getSessionFromToken(validToken);
-//            	if(REVOKE_TOKEN_SERVICES.contains(callingMethod)) {
-//            		;
-//            	}
             	Context context = Context.current().withValue(SESSION_CONTEXT, sessioncontext);
                 return Contexts.interceptCall(context, serverCall, metadata, serverCallHandler);
             } catch (Exception e) {

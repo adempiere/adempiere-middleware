@@ -25,11 +25,13 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.logging.Level;
 
+import org.adempiere.core.domains.models.I_AD_Language;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MAcctSchema;
 import org.compiere.model.MClient;
 import org.compiere.model.MClientInfo;
 import org.compiere.model.MCountry;
+import org.compiere.model.MLanguage;
 import org.compiere.model.MOrg;
 import org.compiere.model.MRole;
 import org.compiere.model.MSession;
@@ -37,10 +39,12 @@ import org.compiere.model.MSysConfig;
 import org.compiere.model.MUser;
 import org.compiere.model.MWarehouse;
 import org.compiere.model.ModelValidationEngine;
+import org.compiere.util.CCache;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.compiere.util.Ini;
+import org.compiere.util.Language;
 import org.compiere.util.TimeUtil;
 import org.compiere.util.Util;
 import org.spin.eca52.util.JWTUtil;
@@ -64,6 +68,61 @@ public class SessionManager {
 	/**	Session Context	*/
 	/**	Logger			*/
 	private static CLogger log = CLogger.getCLogger(SessionManager.class);
+	/**	Language */
+	private static CCache<String, String> languageCache = new CCache<String, String>(I_AD_Language.Table_Name, 30, 0);	//	no time-out
+	
+	/**
+	 * Get Default Country
+	 * @return
+	 */
+	public static MCountry getDefaultCountry() {
+		MClient client = MClient.get (Env.getCtx());
+		MLanguage language = MLanguage.get(Env.getCtx(), client.getAD_Language());
+		MCountry country = MCountry.get(Env.getCtx(), language.getCountryCode());
+		//	Verify
+		if(country != null) {
+			return country;
+		}
+		//	Default
+		return MCountry.getDefault(Env.getCtx());
+	}
+	
+	/**
+	 * Get Default from language
+	 * @param language
+	 * @return
+	 */
+	public static String getDefaultLanguage(String language) {
+		MClient client = MClient.get(Env.getCtx());
+		String clientLanguage = client.getAD_Language();
+		if(!Util.isEmpty(clientLanguage)
+				&& Util.isEmpty(language)) {
+			return clientLanguage;
+		}
+		String defaultLanguage = language;
+		if(Util.isEmpty(language)) {
+			language = Language.AD_Language_en_US;
+		}
+		//	Using es / en instead es_VE / en_US
+		//	get default
+		if(language.length() == 2) {
+			defaultLanguage = languageCache.get(language);
+			if(!Util.isEmpty(defaultLanguage)) {
+				return defaultLanguage;
+			}
+			defaultLanguage = DB.getSQLValueString(null, "SELECT AD_Language "
+					+ "FROM AD_Language "
+					+ "WHERE LanguageISO = ? "
+					+ "AND (IsSystemLanguage = 'Y' OR IsBaseLanguage = 'Y')", language);
+			//	Set language
+			languageCache.put(language, defaultLanguage);
+		}
+		if(Util.isEmpty(defaultLanguage)) {
+			defaultLanguage = Language.AD_Language_en_US;
+		}
+		//	Default return
+		return defaultLanguage;
+	}
 	
 	
 	/**
@@ -71,9 +130,7 @@ public class SessionManager {
 	 * @param tokenValue
 	 */
 	public static Properties getSessionFromToken(String tokenValue) {
-		if (tokenValue.startsWith(Constants.BEARER_TYPE)) {
-			tokenValue = BearerToken.getTokenWithoutType(tokenValue);
-		}
+		tokenValue = TokenManager.getTokenWithoutType(tokenValue);
 		//	Validate if is token based
 		int userId = -1;
 		int roleId = -1;
@@ -135,7 +192,7 @@ public class SessionManager {
 		Env.setContext(context, "#AD_Client_ID", session.getAD_Client_ID());
 		Env.setContext(context, "#Date", new Timestamp(System.currentTimeMillis()));
 		setDefault(context, Env.getAD_Org_ID(context), organizationId, warehouseId);
-		Env.setContext(context, Env.LANGUAGE, ContextManager.getDefaultLanguage(language));
+		Env.setContext(context, Env.LANGUAGE, getDefaultLanguage(language));
 		return context;
 	}
 	
@@ -288,9 +345,7 @@ public class SessionManager {
 		if(Util.isEmpty(tokenValue)) {
 			throw new AdempiereException("@AD_Token_ID@ @NotFound@");
 		}
-		if (tokenValue.startsWith(Constants.BEARER_TYPE)) {
-			tokenValue = BearerToken.getTokenWithoutType(tokenValue);
-		}
+		tokenValue = TokenManager.getTokenWithoutType(tokenValue);
 		//	
 		try {
 			ITokenGenerator generator = TokenGeneratorHandler.getInstance().getTokenGenerator(MADTokenDefinition.TOKENTYPE_ThirdPartyAccess);
@@ -324,7 +379,7 @@ public class SessionManager {
 		MClient client = MClient.get(context, Env.getContextAsInt(context, "#AD_Client_ID"));
 		Env.setContext(context, "#AD_Client_Name", client.getName());
 		Env.setContext(context, "#Date", new Timestamp(System.currentTimeMillis()));
-		Env.setContext(context, Env.LANGUAGE, ContextManager.getDefaultLanguage(language));
+		Env.setContext(context, Env.LANGUAGE, getDefaultLanguage(language));
 		//	Role Info
 		MRole role = MRole.get(context, Env.getContextAsInt(context, "#AD_Role_ID"));
 		Env.setContext(context, "#AD_Role_Name", role.getName());
@@ -541,7 +596,7 @@ public class SessionManager {
 			DB.close(rs, pstmt);
 		}
 		//	Country
-		MCountry country = ContextManager.getDefaultCountry();
+		MCountry country = getDefaultCountry();
 		if(country != null) {
 			Env.setContext(context, "#C_Country_ID", country.getC_Country_ID());
 		}

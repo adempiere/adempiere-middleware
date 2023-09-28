@@ -14,17 +14,25 @@
  ************************************************************************************/
 package org.spin.authentication;
 
+import static io.grpc.Metadata.ASCII_STRING_MARSHALLER;
+
 import java.util.concurrent.Executor;
 
 import io.grpc.CallCredentials;
+import io.grpc.Context;
 import io.grpc.Metadata;
 import io.grpc.Status;
 
-public class BearerToken extends CallCredentials {
+public class TokenManager extends CallCredentials {
 
+	public static final String BEARER_TYPE = "Bearer";
+
+    public static final Metadata.Key<String> AUTHORIZATION_METADATA_KEY = Metadata.Key.of("Authorization", ASCII_STRING_MARSHALLER);
+    public static final Context.Key<String> CLIENT_ID_CONTEXT_KEY = Context.key("clientId");
+    
     private String value;
 
-    public BearerToken(String value) {
+    public TokenManager(String value) {
         this.value = value;
     }
 
@@ -33,7 +41,7 @@ public class BearerToken extends CallCredentials {
         executor.execute(() -> {
             try {
                 Metadata headers = new Metadata();
-                headers.put(Constants.AUTHORIZATION_METADATA_KEY, String.format("%s %s", Constants.BEARER_TYPE, value));
+                headers.put(AUTHORIZATION_METADATA_KEY, String.format("%s %s", BEARER_TYPE, value));
                 metadataApplier.apply(headers);
             } catch (Throwable e) {
                 metadataApplier.fail(Status.UNAUTHENTICATED.withCause(e));
@@ -50,8 +58,8 @@ public class BearerToken extends CallCredentials {
 		if (token == null || token.trim().length() == 0) {
 			return "";
 		}
-		if (token.startsWith(Constants.BEARER_TYPE)) {
-			return token.substring(Constants.BEARER_TYPE.length()).trim();
+		if (token.startsWith(BEARER_TYPE)) {
+			return token.substring(BEARER_TYPE.length()).trim();
 		}
 		return token;
 	}

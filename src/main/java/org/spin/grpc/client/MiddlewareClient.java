@@ -23,7 +23,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import org.compiere.util.CLogger;
-import org.spin.authentication.BearerToken;
+import org.spin.authentication.TokenManager;
 import org.spin.grpc.service.ValueManager;
 import org.spin.proto.service.Entity;
 import org.spin.proto.service.CreateEntityRequest;
@@ -73,7 +73,7 @@ public class MiddlewareClient {
         String testToken = "Bearer ";
         byte[] keyBytes = Decoders.BASE64.decode(testToken);
         Key key = Keys.hmacShaKeyFor(keyBytes);
-        BearerToken token = new BearerToken(Jwts.builder()
+        TokenManager token = new TokenManager(Jwts.builder()
         		.setId("101")
         		.setAudience("102")
                 .setSubject("11")
